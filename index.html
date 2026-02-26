@@ -2,102 +2,57 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>업무 포털</title>
+<title>직원 사이트</title>
 
 <style>
-
 body{
-font-family:Arial;
-background:#f4f6fb;
+font-family: Arial;
+background:#f5f6fa;
 margin:0;
 padding:40px;
 }
 
-.container{
-max-width:1200px;
-margin:auto;
-}
-
-h1{
-text-align:center;
-font-size:42px;
-margin-bottom:20px;
-}
-
-.user{
-text-align:right;
-margin-bottom:10px;
-color:#555;
-}
-
-.topbar{
+.top{
 display:flex;
 gap:10px;
-margin-bottom:20px;
+margin-bottom:30px;
 }
 
-.search{
+#search{
 flex:1;
-padding:12px;
+padding:14px;
 font-size:16px;
 border-radius:8px;
 border:1px solid #ccc;
 }
 
-.searchBtn{
-padding:12px 18px;
+#searchBtn{
+padding:14px 24px;
+font-size:16px;
 border:none;
-background:#4c7cff;
+background:#2f80ed;
 color:white;
 border-radius:8px;
 cursor:pointer;
-}
-
-.loginBtn{
-padding:12px 18px;
-border:none;
-background:#222;
-color:white;
-border-radius:8px;
-cursor:pointer;
-}
-
-.categories{
-margin-bottom:20px;
-}
-
-.categories button{
-margin-right:8px;
-padding:8px 14px;
-border:none;
-border-radius:8px;
-background:#e7ebf4;
-cursor:pointer;
-}
-
-.categories button.active{
-background:#4c7cff;
-color:white;
 }
 
 .grid{
 display:grid;
 grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
-gap:22px;
+gap:20px;
 }
 
 .card{
 background:white;
-border-radius:16px;
-padding:28px;
-text-align:center;
+border-radius:14px;
+padding:22px;
+box-shadow:0 3px 10px rgba(0,0,0,0.08);
 cursor:pointer;
 position:relative;
-box-shadow:0 4px 12px rgba(0,0,0,0.06);
 }
 
 .card:hover{
-transform:translateY(-4px);
+transform:translateY(-3px);
 }
 
 .icon{
@@ -105,216 +60,77 @@ font-size:32px;
 margin-bottom:10px;
 }
 
+.name{
+font-size:18px;
+font-weight:bold;
+}
+
 .star{
 position:absolute;
-top:10px;
 right:12px;
-font-size:18px;
+top:12px;
 cursor:pointer;
+font-size:20px;
 }
-
-.adminBar{
-margin-top:30px;
-}
-
-.adminBar button{
-margin-right:10px;
-padding:10px 16px;
-}
-
-.modal{
-position:fixed;
-top:0;
-left:0;
-right:0;
-bottom:0;
-background:rgba(0,0,0,.3);
-display:none;
-align-items:center;
-justify-content:center;
-}
-
-.modalBox{
-background:white;
-padding:25px;
-border-radius:12px;
-width:380px;
-}
-
-.modalBox input,
-.modalBox select{
-width:100%;
-padding:10px;
-margin-bottom:10px;
-}
-
-.iconGrid{
-display:grid;
-grid-template-columns:repeat(5,1fr);
-gap:8px;
-margin-bottom:10px;
-}
-
-.iconItem{
-background:#eee;
-padding:8px;
-text-align:center;
-border-radius:6px;
-cursor:pointer;
-}
-
-.iconItem.active{
-background:#4c7cff;
-color:white;
-}
-
 </style>
 </head>
 
 <body>
 
-<div class="container">
-
-<h1>업무 포털</h1>
-
-<div class="user" id="user"></div>
-
-<div class="topbar">
-<input id="search" class="search" placeholder="검색">
-<button class="searchBtn" onclick="render()">검색</button>
-<button class="loginBtn" onclick="login()">로그인</button>
+<div class="top">
+<input id="search" placeholder="사이트 검색"/>
+<button id="searchBtn">검색</button>
 </div>
 
-<div class="categories" id="categories"></div>
-
-<div id="grid" class="grid"></div>
-
-<div id="adminBar" class="adminBar" style="display:none">
-<button onclick="openAdd()">사이트 추가</button>
-<button onclick="addCategory()">카테고리 추가</button>
-</div>
-
-</div>
-
-<div class="modal" id="modal">
-<div class="modalBox">
-
-<input id="siteName" placeholder="사이트 이름">
-<input id="siteURL" placeholder="URL">
-
-<select id="siteCategory"></select>
-
-<div class="iconGrid" id="iconGrid"></div>
-
-<button onclick="saveSite()">저장</button>
-<button onclick="deleteSite()">삭제</button>
-
-</div>
-</div>
+<div class="grid" id="grid"></div>
 
 <script>
 
-let currentUser=""
-let isAdmin=false
-let editingIndex=null
-let currentCategory="전체"
+const grid=document.getElementById("grid")
 
-let icons=["📊","🧾","🏥","📁","⚙️","🌐","📈","💾","👤","⭐"]
+function load(){
 
-let categories=JSON.parse(localStorage.getItem("portal_categories"))||["전체","업무"]
+let data=JSON.parse(localStorage.getItem("sites")||"[]")
+let fav=JSON.parse(localStorage.getItem("fav")||"[]")
 
-let sites=JSON.parse(localStorage.getItem("portal_sites"))||[
-{
-name:"환자 내원 분석",
-url:"https://sdsd824-ux.github.io/visitrate/",
-category:"업무",
-icon:"📊"
-}
-]
-
-let favorites=[]
-
-function saveData(){
-localStorage.setItem("portal_sites",JSON.stringify(sites))
-localStorage.setItem("portal_categories",JSON.stringify(categories))
-}
-
-function login(){
-
-let name=prompt("이름")
-
-if(!name) return
-
-currentUser=name
-document.getElementById("user").innerText="사용자 : "+name
-
-if(name==="김윤식"){
-
-let pass=prompt("관리자 비밀번호")
-
-if(pass==="진설김윤식"){
-isAdmin=true
-adminBar.style.display="block"
-}
-
-}
-
-favorites=JSON.parse(localStorage.getItem("fav_"+name)||"[]")
-
-render()
-
-}
-
-function render(){
-
-let keyword=search.value.toLowerCase()
-
-let grid=document.getElementById("grid")
-grid.innerHTML=""
-
-drawCategories()
-
-let sorted=[...sites].sort((a,b)=>{
-
-let af=favorites.includes(a.url)?0:1
-let bf=favorites.includes(b.url)?0:1
-return af-bf
-
+data.sort((a,b)=>{
+return (fav.includes(b.url)?1:0)-(fav.includes(a.url)?1:0)
 })
 
-sorted.forEach((site,i)=>{
+grid.innerHTML=""
 
-if(keyword && !site.name.toLowerCase().includes(keyword)) return
-
-if(currentCategory!=="전체"){
-if(site.category!==currentCategory) return
-}
+data.forEach(site=>{
 
 let card=document.createElement("div")
 card.className="card"
 
-let star=favorites.includes(site.url)?"★":"☆"
+card.onclick=()=>{
+window.open(site.url,"_blank")
+}
+
+let star=document.createElement("div")
+star.className="star"
+star.innerHTML=fav.includes(site.url)?"⭐":"☆"
+
+star.onclick=(e)=>{
+e.stopPropagation()
+
+if(fav.includes(site.url)){
+fav=fav.filter(v=>v!==site.url)
+}else{
+fav.push(site.url)
+}
+
+localStorage.setItem("fav",JSON.stringify(fav))
+load()
+}
 
 card.innerHTML=`
-<div class="star">${star}</div>
-<div class="icon">${site.icon}</div>
-<div><b>${site.name}</b></div>
-<div style="font-size:12px;color:#777">${site.category}</div>
+<div class="icon">${site.icon||"🌐"}</div>
+<div class="name">${site.name||site.url}</div>
 `
 
-card.onclick=()=>window.open(site.url)
-
-card.querySelector(".star").onclick=(e)=>{
-e.stopPropagation()
-toggleFav(site.url)
-}
-
-if(isAdmin){
-card.oncontextmenu=(e)=>{
-e.preventDefault()
-editSite(i)
-}
-}
+card.appendChild(star)
 
 grid.appendChild(card)
 
@@ -322,178 +138,24 @@ grid.appendChild(card)
 
 }
 
-function toggleFav(url){
+load()
 
-if(favorites.includes(url)){
-favorites=favorites.filter(f=>f!==url)
-}else{
-favorites.push(url)
+document.getElementById("searchBtn").onclick=search
+document.getElementById("search").onkeyup=(e)=>{
+if(e.key==="Enter")search()
 }
 
-localStorage.setItem("fav_"+currentUser,JSON.stringify(favorites))
-render()
+function search(){
 
-}
+let q=document.getElementById("search").value.toLowerCase()
+let cards=document.querySelectorAll(".card")
 
-function drawCategories(){
-
-let wrap=document.getElementById("categories")
-wrap.innerHTML=""
-
-categories.forEach(cat=>{
-
-let btn=document.createElement("button")
-btn.innerText=cat
-
-if(cat===currentCategory) btn.classList.add("active")
-
-btn.onclick=()=>{
-currentCategory=cat
-render()
-}
-
-wrap.appendChild(btn)
-
+cards.forEach(c=>{
+let text=c.innerText.toLowerCase()
+c.style.display=text.includes(q)?"block":"none"
 })
 
 }
-
-function openAdd(){
-
-editingIndex=null
-modal.style.display="flex"
-
-siteName.value=""
-siteURL.value=""
-
-drawCategorySelect()
-drawIcons()
-
-}
-
-function editSite(i){
-
-editingIndex=i
-
-let s=sites[i]
-
-modal.style.display="flex"
-
-siteName.value=s.name
-siteURL.value=s.url
-
-drawCategorySelect(s.category)
-drawIcons(s.icon)
-
-}
-
-function drawCategorySelect(selected){
-
-siteCategory.innerHTML=""
-
-categories.forEach(cat=>{
-
-let o=document.createElement("option")
-o.value=cat
-o.innerText=cat
-
-if(cat===selected) o.selected=true
-
-siteCategory.appendChild(o)
-
-})
-
-}
-
-function drawIcons(selected){
-
-let wrap=document.getElementById("iconGrid")
-wrap.innerHTML=""
-
-icons.forEach(icon=>{
-
-let div=document.createElement("div")
-div.className="iconItem"
-div.innerText=icon
-
-if(icon===selected) div.classList.add("active")
-
-div.onclick=()=>{
-
-document.querySelectorAll(".iconItem")
-.forEach(i=>i.classList.remove("active"))
-
-div.classList.add("active")
-
-}
-
-wrap.appendChild(div)
-
-})
-
-}
-
-function getSelectedIcon(){
-
-let active=document.querySelector(".iconItem.active")
-return active?active.innerText:"📊"
-
-}
-
-function saveSite(){
-
-let data={
-name:siteName.value,
-url:siteURL.value,
-category:siteCategory.value,
-icon:getSelectedIcon()
-}
-
-if(editingIndex===null){
-sites.push(data)
-}else{
-sites[editingIndex]=data
-}
-
-saveData()
-
-modal.style.display="none"
-render()
-
-}
-
-function deleteSite(){
-
-if(editingIndex===null) return
-
-sites.splice(editingIndex,1)
-
-saveData()
-
-modal.style.display="none"
-render()
-
-}
-
-function addCategory(){
-
-let name=prompt("카테고리 이름")
-
-if(!name) return
-
-categories.push(name)
-
-saveData()
-
-render()
-
-}
-
-search.addEventListener("keydown",e=>{
-if(e.key==="Enter") render()
-})
-
-render()
 
 </script>
 
