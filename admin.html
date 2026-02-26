@@ -2,45 +2,32 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>업무포털 관리자</title>
+<title>관리자</title>
 
 <style>
-
 body{
 font-family:Arial;
-background:#f4f6fb;
+background:#f4f6f9;
 padding:40px;
 }
 
-.container{
-max-width:900px;
-margin:auto;
-}
-
-h1{
-margin-bottom:20px;
-}
-
 input,select{
-padding:10px;
-margin:6px 0;
-width:100%;
+padding:8px;
+margin:5px;
+width:300px;
 }
 
 button{
-padding:10px 14px;
-margin-top:10px;
+padding:8px 14px;
+margin:5px;
 cursor:pointer;
 }
 
 .site{
 background:white;
-padding:14px;
+padding:15px;
+margin:10px 0;
 border-radius:8px;
-margin-bottom:10px;
-display:flex;
-justify-content:space-between;
-align-items:center;
 }
 
 </style>
@@ -48,138 +35,140 @@ align-items:center;
 
 <body>
 
-<div class="container" id="app" style="display:none">
+<div id="login">
+<h2>관리자 로그인</h2>
+<input id="pw" type="password">
+<button onclick="check()">입장</button>
+</div>
 
-<h1>관리자</h1>
+<div id="admin" style="display:none">
 
-<h3>사이트 추가</h3>
+<h2>사이트 추가</h2>
 
-<input id="name" placeholder="사이트 이름">
-<input id="url" placeholder="URL">
+<input id="name" placeholder="사이트 이름"><br>
+<input id="url" placeholder="URL"><br>
 
-<select id="category"></select>
+<select id="category"></select><br>
 
 <select id="icon">
-<option value="auto">자동 아이콘</option>
-<option value="https://cdn-icons-png.flaticon.com/512/25/25231.png">기본</option>
-<option value="https://cdn-icons-png.flaticon.com/512/732/732212.png">문서</option>
-<option value="https://cdn-icons-png.flaticon.com/512/906/906334.png">차트</option>
-</select>
+<option value="https://cdn-icons-png.flaticon.com/512/25/25694.png">포털</option>
+<option value="https://cdn-icons-png.flaticon.com/512/1828/1828919.png">차트</option>
+<option value="https://cdn-icons-png.flaticon.com/512/2991/2991148.png">병원</option>
+<option value="https://cdn-icons-png.flaticon.com/512/3523/3523063.png">문서</option>
+<option value="https://cdn-icons-png.flaticon.com/512/888/888879.png">설정</option>
+<option value="https://cdn-icons-png.flaticon.com/512/2920/2920349.png">통계</option>
+<option value="https://cdn-icons-png.flaticon.com/512/1034/1034131.png">웹</option>
+<option value="https://cdn-icons-png.flaticon.com/512/3064/3064197.png">DB</option>
+<option value="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">사용자</option>
+<option value="https://cdn-icons-png.flaticon.com/512/3524/3524659.png">즐겨찾기</option>
+</select><br>
 
 <button onclick="addSite()">추가</button>
 
-<h3>카테고리 관리</h3>
+<h2>카테고리</h2>
 
-<input id="newCat" placeholder="카테고리 이름">
-<button onclick="addCat()">카테고리 추가</button>
+<input id="newCat">
+<button onclick="addCat()">추가</button>
 
-<h3>사이트 목록</h3>
-<div id="list"></div>
+<div id="catList"></div>
+
+<h2>사이트 목록</h2>
+<div id="siteList"></div>
 
 </div>
 
 <script>
 
-let pass=prompt("관리자 비밀번호")
-
-if(pass==="진설김윤식"){
-document.getElementById("app").style.display="block"
-}else{
-alert("비밀번호 틀림")
-throw new Error()
+function check(){
+if(document.getElementById("pw").value==="진설김윤식"){
+document.getElementById("login").style.display="none"
+document.getElementById("admin").style.display="block"
+load()
+}
 }
 
-let sites=JSON.parse(localStorage.getItem("portal_sites")||"[]")
-let cats=JSON.parse(localStorage.getItem("portal_cats")||'["업무"]')
+let sites=[]
+let categories=[]
+
+function load(){
+sites=JSON.parse(localStorage.getItem("sites")||"[]")
+categories=JSON.parse(localStorage.getItem("categories")||'["전체"]')
+draw()
+}
 
 function save(){
-localStorage.setItem("portal_sites",JSON.stringify(sites))
-localStorage.setItem("portal_cats",JSON.stringify(cats))
-render()
+localStorage.setItem("sites",JSON.stringify(sites))
+localStorage.setItem("categories",JSON.stringify(categories))
+draw()
 }
 
-function render(){
+function draw(){
 
-let list=document.getElementById("list")
-list.innerHTML=""
-
-let sel=document.getElementById("category")
-sel.innerHTML=""
-
-cats.forEach(c=>{
-let o=document.createElement("option")
-o.value=c
-o.textContent=c
-sel.appendChild(o)
+let catSel=document.getElementById("category")
+catSel.innerHTML=""
+categories.forEach(c=>{
+catSel.innerHTML+=`<option>${c}</option>`
 })
 
+let catList=document.getElementById("catList")
+catList.innerHTML=""
+categories.forEach((c,i)=>{
+if(c==="전체")return
+catList.innerHTML+=`
+<div>
+${c}
+<button onclick="delCat(${i})">삭제</button>
+</div>`
+})
+
+let siteList=document.getElementById("siteList")
+siteList.innerHTML=""
 sites.forEach((s,i)=>{
-
-let div=document.createElement("div")
-div.className="site"
-
-div.innerHTML=`
-<div>
-<b>${s.name}</b>
-<div style="font-size:12px;color:#666">${s.category}</div>
-</div>
-<div>
-<button onclick="editSite(${i})">수정</button>
-<button onclick="delSite(${i})">삭제</button>
-</div>
-`
-
-list.appendChild(div)
-
+siteList.innerHTML+=`
+<div class="site">
+${s.name} (${s.category})
+<button onclick="edit(${i})">수정</button>
+<button onclick="del(${i})">삭제</button>
+</div>`
 })
 
 }
 
 function addSite(){
-
-let name=document.getElementById("name").value
-let url=document.getElementById("url").value
-let category=document.getElementById("category").value
-let icon=document.getElementById("icon").value
-
-sites.push({name,url,category,icon})
-
+let s={
+name:name.value,
+url:url.value,
+category:category.value,
+icon:icon.value
+}
+sites.push(s)
 save()
-
 }
 
-function delSite(i){
+function del(i){
 sites.splice(i,1)
 save()
 }
 
-function editSite(i){
-
+function edit(i){
 let s=sites[i]
-
-let name=prompt("이름",s.name)
-let url=prompt("URL",s.url)
-
-s.name=name
-s.url=url
-
+let n=prompt("이름",s.name)
+let u=prompt("URL",s.url)
+if(!n||!u)return
+s.name=n
+s.url=u
 save()
-
 }
 
 function addCat(){
-
-let c=document.getElementById("newCat").value
-
-if(!c) return
-
-cats.push(c)
-
+categories.push(newCat.value)
 save()
-
 }
 
-render()
+function delCat(i){
+categories.splice(i,1)
+save()
+}
 
 </script>
 
