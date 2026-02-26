@@ -37,12 +37,22 @@ align-items:center;
 margin-bottom:20px;
 }
 
+.leftTop{
+display:flex;
+gap:10px;
+align-items:center;
+}
+
 .search{
-width:300px;
+width:260px;
 padding:10px;
 font-size:16px;
 border-radius:8px;
 border:1px solid #ccc;
+}
+
+.user{
+color:#555;
 }
 
 .loginBtn{
@@ -107,9 +117,17 @@ font-size:18px;
 cursor:pointer;
 }
 
+.edit{
+position:absolute;
+left:10px;
+top:10px;
+font-size:16px;
+cursor:pointer;
+}
+
 .category{
 font-size:12px;
-color:#888;
+color:#777;
 margin-top:4px;
 }
 
@@ -128,12 +146,29 @@ cursor:pointer;
 margin:5px;
 }
 
-.editBtn{
-position:absolute;
-left:10px;
-top:10px;
-font-size:14px;
-cursor:pointer;
+.modal{
+position:fixed;
+top:0;
+left:0;
+right:0;
+bottom:0;
+background:rgba(0,0,0,0.3);
+display:none;
+align-items:center;
+justify-content:center;
+}
+
+.modalBox{
+background:white;
+padding:25px;
+border-radius:10px;
+width:350px;
+}
+
+.modalBox input{
+width:100%;
+padding:8px;
+margin-bottom:10px;
 }
 
 </style>
@@ -147,8 +182,14 @@ cursor:pointer;
 <div class="sub">자주 사용하는 사이트</div>
 
 <div class="topbar">
+
+<div class="leftTop">
 <input class="search" placeholder="검색" id="search">
+<div class="user" id="userLabel"></div>
+</div>
+
 <button class="loginBtn" onclick="login()">로그인</button>
+
 </div>
 
 <div id="categories" class="categories"></div>
@@ -156,10 +197,25 @@ cursor:pointer;
 <div id="grid" class="grid"></div>
 
 <div class="admin" id="adminPanel" style="display:none">
-<button class="addBtn" onclick="addSite()">사이트 추가</button>
+<button class="addBtn" onclick="openAdd()">사이트 추가</button>
 <button class="addBtn" onclick="manageCategories()">카테고리 관리</button>
 </div>
 
+</div>
+
+
+<div class="modal" id="modal">
+<div class="modalBox">
+
+<input id="m_name" placeholder="사이트 이름">
+<input id="m_url" placeholder="URL">
+<input id="m_cat" placeholder="카테고리">
+<input id="m_icon" placeholder="아이콘 URL or emoji">
+
+<button onclick="saveSite()">저장</button>
+<button onclick="deleteSite()">삭제</button>
+
+</div>
 </div>
 
 <script>
@@ -167,33 +223,31 @@ cursor:pointer;
 let currentUser=localStorage.getItem("portal_user") || ""
 let isAdmin=false
 
-if(currentUser==="김윤식"){
-isAdmin=true
-}
+if(currentUser==="김윤식") isAdmin=true
+
+document.getElementById("userLabel").innerText=currentUser?`사용자 : ${currentUser}`:""
 
 let defaultSites=[
 {
 name:"환자 내원 분석",
 url:"https://sdsd824-ux.github.io/visitrate/",
 icon:"auto",
-category:"분석"
+category:"업무"
 }
 ]
 
 let sites=JSON.parse(localStorage.getItem("portal_sites")||"null") || defaultSites
 
+sites=sites.filter(s=>s && s.name && s.url)
+
 let favorites=JSON.parse(localStorage.getItem("fav_"+currentUser)||"[]")
 
-let categories=JSON.parse(localStorage.getItem("portal_categories")||"null") || ["전체","분석"]
+let categories=JSON.parse(localStorage.getItem("portal_categories")||"null") || ["전체","업무"]
 
-let currentCategory="전체"
+let selectedCategory="전체"
 
-function save(){
+let editing=null
 
-localStorage.setItem("portal_sites",JSON.stringify(sites))
-localStorage.setItem("portal_categories",JSON.stringify(categories))
-
-}
 
 function renderCategories(){
 
@@ -205,12 +259,12 @@ categories.forEach(cat=>{
 let btn=document.createElement("button")
 btn.className="catBtn"
 
-if(cat===currentCategory) btn.classList.add("catActive")
+if(cat===selectedCategory) btn.classList.add("catActive")
 
 btn.innerText=cat
 
 btn.onclick=()=>{
-currentCategory=cat
+selectedCategory=cat
 render()
 }
 
@@ -224,44 +278,42 @@ function render(){
 
 renderCategories()
 
-let keyword=document.getElementById("search").value.toLowerCase()
-
 let grid=document.getElementById("grid")
 grid.innerHTML=""
 
+let keyword=document.getElementById("search").value.toLowerCase()
+
 let sorted=[...sites].sort((a,b)=>{
+
 let af=favorites.includes(a.url)?0:1
 let bf=favorites.includes(b.url)?0:1
+
 return af-bf
+
 })
 
 sorted.forEach(site=>{
 
-if(currentCategory!=="전체" && site.category!==currentCategory) return
+if(selectedCategory!=="전체" && site.category!==selectedCategory) return
 
 if(keyword && !site.name.toLowerCase().includes(keyword)) return
 
-let card=document.createElement("div")
-card.className="card"
-card.draggable=isAdmin
-
-let icon=""
-
-if(site.icon==="auto"){
-icon=`https://www.google.com/s2/favicons?sz=64&domain_url=${site.url}`
-}else{
-icon=site.icon
-}
+let icon=site.icon==="auto"
+?`https://www.google.com/s2/favicons?sz=64&domain_url=${site.url}`
+:site.icon
 
 let star=favorites.includes(site.url)?"★":"☆"
 
+let card=document.createElement("div")
+card.className="card"
+
 card.innerHTML=`
 
-${isAdmin?'<div class="editBtn">⚙</div>':''}
+${isAdmin?'<div class="edit">⚙</div>':''}
 <div class="star">${star}</div>
 <img class="icon" src="${icon}">
 <div><b>${site.name}</b></div>
-<div class="category">${site.category||""}</div>
+<div class="category">${site.category}</div>
 
 `
 
@@ -274,20 +326,9 @@ toggleFav(site.url)
 
 if(isAdmin){
 
-card.querySelector(".editBtn").onclick=(e)=>{
+card.querySelector(".edit").onclick=(e)=>{
 e.stopPropagation()
-editSite(site)
-}
-
-card.ondragstart=(e)=>{
-e.dataTransfer.setData("url",site.url)
-}
-
-card.ondragover=(e)=>e.preventDefault()
-
-card.ondrop=(e)=>{
-let dragged=e.dataTransfer.getData("url")
-reorder(dragged,site.url)
+edit(site)
 }
 
 }
@@ -300,28 +341,15 @@ document.getElementById("adminPanel").style.display=isAdmin?"block":"none"
 
 }
 
-function reorder(a,b){
-
-let from=sites.findIndex(s=>s.url===a)
-let to=sites.findIndex(s=>s.url===b)
-
-let item=sites.splice(from,1)[0]
-sites.splice(to,0,item)
-
-save()
-render()
-
-}
-
 function toggleFav(url){
 
-if(favorites.includes(url)){
+if(favorites.includes(url))
 favorites=favorites.filter(f=>f!==url)
-}else{
+else
 favorites.push(url)
-}
 
 localStorage.setItem("fav_"+currentUser,JSON.stringify(favorites))
+
 render()
 
 }
@@ -337,7 +365,7 @@ if(name==="김윤식"){
 let pass=prompt("관리자 비밀번호")
 
 if(pass!=="진설김윤식"){
-alert("비밀번호 틀림")
+alert("틀림")
 return
 }
 
@@ -346,91 +374,98 @@ isAdmin=true
 }
 
 currentUser=name
-
 localStorage.setItem("portal_user",name)
 
 favorites=JSON.parse(localStorage.getItem("fav_"+currentUser)||"[]")
 
+location.reload()
+
+}
+
+function openAdd(){
+
+editing=null
+
+document.getElementById("modal").style.display="flex"
+
+}
+
+function edit(site){
+
+editing=site
+
+m_name.value=site.name
+m_url.value=site.url
+m_cat.value=site.category
+m_icon.value=site.icon
+
+modal.style.display="flex"
+
+}
+
+function saveSite(){
+
+let name=m_name.value
+let url=m_url.value
+let cat=m_cat.value
+let icon=m_icon.value||"auto"
+
+if(!name||!url) return
+
+if(editing){
+
+editing.name=name
+editing.url=url
+editing.category=cat
+editing.icon=icon
+
+}else{
+
+sites.push({name,url,category:cat,icon})
+
+}
+
+if(!categories.includes(cat)) categories.push(cat)
+
+localStorage.setItem("portal_sites",JSON.stringify(sites))
+localStorage.setItem("portal_categories",JSON.stringify(categories))
+
+modal.style.display="none"
+
 render()
 
 }
 
-function addSite(){
+function deleteSite(){
 
-let name=prompt("사이트 이름")
-if(!name) return
+if(!editing) return
 
-let url=prompt("사이트 주소")
-if(!url) return
+sites=sites.filter(s=>s!==editing)
 
-let category=prompt("카테고리",categories[1]||"")
+localStorage.setItem("portal_sites",JSON.stringify(sites))
 
-let iconType=prompt("아이콘\n1 자동\n2 이모지\n3 이미지URL")
+modal.style.display="none"
 
-let icon="auto"
-
-if(iconType==="2") icon=prompt("이모지 입력")
-if(iconType==="3") icon=prompt("이미지 주소")
-
-sites.push({
-name,
-url,
-icon,
-category
-})
-
-if(!categories.includes(category)) categories.push(category)
-
-save()
-render()
-
-}
-
-function editSite(site){
-
-let name=prompt("이름",site.name)
-let url=prompt("주소",site.url)
-let category=prompt("카테고리",site.category)
-
-site.name=name
-site.url=url
-site.category=category
-
-save()
 render()
 
 }
 
 function manageCategories(){
 
-let action=prompt("1 추가\n2 삭제")
+let name=prompt("카테고리 추가")
 
-if(action==="1"){
-
-let name=prompt("카테고리 이름")
-
-if(name && !categories.includes(name)){
+if(name){
 
 categories.push(name)
+localStorage.setItem("portal_categories",JSON.stringify(categories))
 
-}
-
-}
-
-if(action==="2"){
-
-let name=prompt("삭제할 카테고리")
-
-categories=categories.filter(c=>c!==name)
-
-}
-
-save()
 render()
 
 }
 
-document.getElementById("search").addEventListener("input",render)
+}
+
+search.addEventListener("input",render)
 
 render()
 
