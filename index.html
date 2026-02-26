@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<title>업무포털</title>
+<title>WORK STATION</title>
 
 <style>
 
@@ -13,9 +13,32 @@ margin:0;
 padding:40px;
 }
 
-h1{
-margin-bottom:25px;
+/* 헤더 */
+
+.header{
+text-align:center;
+margin-bottom:35px;
 }
+
+.logo{
+width:70px;
+margin-bottom:8px;
+}
+
+.subtitle{
+font-size:13px;
+color:#777;
+letter-spacing:2px;
+}
+
+.title{
+font-size:42px;
+font-weight:800;
+margin-top:6px;
+letter-spacing:1px;
+}
+
+/* 검색 */
 
 .top{
 display:flex;
@@ -41,6 +64,8 @@ border-radius:8px;
 cursor:pointer;
 }
 
+/* 카테고리 */
+
 .tabs{
 margin-bottom:25px;
 }
@@ -59,6 +84,8 @@ background:#2f80ed;
 color:white;
 }
 
+/* 카드 */
+
 .grid{
 display:grid;
 grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
@@ -72,6 +99,12 @@ padding:22px;
 box-shadow:0 3px 10px rgba(0,0,0,0.08);
 cursor:pointer;
 position:relative;
+transition:0.15s;
+}
+
+.card:hover{
+transform:translateY(-4px);
+box-shadow:0 6px 18px rgba(0,0,0,0.1);
 }
 
 .icon{
@@ -97,14 +130,29 @@ cursor:pointer;
 
 <body>
 
-<h1>업무포털</h1>
+<!-- 헤더 -->
+
+<div class="header">
+
+<img src="logo.png" class="logo">
+
+<div class="subtitle">STAFF SITE COLLECTION</div>
+<div class="title">WORK STATION</div>
+
+</div>
+
+<!-- 검색 -->
 
 <div class="top">
 <input id="search" placeholder="사이트 검색">
 <button id="searchBtn">검색</button>
 </div>
 
+<!-- 카테고리 -->
+
 <div class="tabs" id="tabs"></div>
+
+<!-- 카드 -->
 
 <div class="grid" id="grid"></div>
 
@@ -116,7 +164,7 @@ function load(){
 
 let sites=JSON.parse(localStorage.getItem("sites")||"[]")
 let fav=JSON.parse(localStorage.getItem("fav")||"[]")
-let cats=JSON.parse(localStorage.getItem("cats")||"['전체']")
+let cats=JSON.parse(localStorage.getItem("cats")||'["전체"]')
 
 renderTabs(cats)
 
@@ -197,6 +245,7 @@ if(e.key==="Enter")search()
 function search(){
 
 let q=search.value.toLowerCase()
+
 document.querySelectorAll(".card").forEach(c=>{
 c.style.display=c.innerText.toLowerCase().includes(q)?"block":"none"
 })
