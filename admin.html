@@ -5,6 +5,7 @@
 <title>관리자</title>
 
 <style>
+
 body{
 font-family:Arial;
 background:#f5f6fa;
@@ -14,26 +15,34 @@ padding:40px;
 input,select{
 padding:10px;
 margin:5px 0;
-width:300px;
+width:260px;
 }
 
 button{
-padding:10px 16px;
+padding:8px 14px;
 margin-left:5px;
 }
 
 .row{
 background:white;
-padding:15px;
+padding:12px;
 margin-top:10px;
 border-radius:8px;
 }
 
-.iconPick span{
-font-size:24px;
+.icons span{
+font-size:26px;
 margin-right:10px;
 cursor:pointer;
+padding:4px;
+border-radius:6px;
 }
+
+.icons span.active{
+background:#2f80ed;
+color:white;
+}
+
 </style>
 </head>
 
@@ -42,7 +51,7 @@ cursor:pointer;
 <div id="login">
 
 <h2>관리자 로그인</h2>
-<input type="password" id="pw" placeholder="비밀번호">
+<input type="password" id="pw">
 <button onclick="login()">접속</button>
 
 </div>
@@ -54,20 +63,22 @@ cursor:pointer;
 <input id="name" placeholder="사이트 이름"><br>
 <input id="url" placeholder="URL"><br>
 
-<div class="iconPick">
-아이콘 선택<br>
-<span onclick="pick('🌐')">🌐</span>
-<span onclick="pick('📊')">📊</span>
-<span onclick="pick('🏥')">🏥</span>
-<span onclick="pick('📁')">📁</span>
-<span onclick="pick('⭐')">⭐</span>
-</div>
+<select id="category"></select>
+
+<div class="icons" id="icons"></div>
 
 <br>
 
 <button onclick="add()">추가</button>
 
-<h2>목록</h2>
+<h2>카테고리 관리</h2>
+
+<input id="newCat" placeholder="카테고리 이름">
+<button onclick="addCat()">추가</button>
+
+<div id="catList"></div>
+
+<h2>사이트 목록</h2>
 
 <div id="list"></div>
 
@@ -75,68 +86,92 @@ cursor:pointer;
 
 <script>
 
-const PASSWORD="wlstjfrladbstlr"
-
-function login(){
-
-if(document.getElementById("pw").value===PASSWORD){
-
-document.getElementById("login").style.display="none"
-document.getElementById("admin").style.display="block"
-
-load()
-
-}else{
-alert("비밀번호 틀림")
-}
-
-}
+const PASSWORD="진설김윤식"
 
 let picked="🌐"
 
-function pick(v){
-picked=v
+const iconList=["🌐","📊","🏥","📁","⭐","💬","📅","🧾"]
+
+function login(){
+
+if(pw.value===PASSWORD){
+
+login.style.display="none"
+admin.style.display="block"
+
+init()
+
+}else alert("비밀번호 틀림")
+
+}
+
+function init(){
+
+renderIcons()
+
+let cats=JSON.parse(localStorage.getItem("cats")||"['전체']")
+updateCatSelect(cats)
+renderCatList(cats)
+loadSites()
+
+}
+
+function renderIcons(){
+
+let box=document.getElementById("icons")
+box.innerHTML=""
+
+iconList.forEach(i=>{
+
+let s=document.createElement("span")
+s.innerText=i
+
+if(i==picked) s.classList.add("active")
+
+s.onclick=()=>{
+picked=i
+renderIcons()
+}
+
+box.appendChild(s)
+
+})
+
 }
 
 function add(){
 
-let name=document.getElementById("name").value
-let url=document.getElementById("url").value
-
-if(!url)return
-
 let data=JSON.parse(localStorage.getItem("sites")||"[]")
 
 data.push({
-name:name,
-url:url,
-icon:picked
+name:name.value,
+url:url.value,
+icon:picked,
+category:category.value
 })
 
 localStorage.setItem("sites",JSON.stringify(data))
 
-load()
+loadSites()
 
 }
 
-function load(){
+function loadSites(){
 
 let data=JSON.parse(localStorage.getItem("sites")||"[]")
-let list=document.getElementById("list")
-
 list.innerHTML=""
 
 data.forEach((s,i)=>{
 
-let div=document.createElement("div")
-div.className="row"
+let d=document.createElement("div")
+d.className="row"
 
-div.innerHTML=`
-${s.icon} ${s.name||"(이름없음)"}
+d.innerHTML=`
+${s.icon} ${s.name} (${s.category})
 <button onclick="del(${i})">삭제</button>
 `
 
-list.appendChild(div)
+list.appendChild(d)
 
 })
 
@@ -148,12 +183,64 @@ let data=JSON.parse(localStorage.getItem("sites")||"[]")
 data.splice(i,1)
 
 localStorage.setItem("sites",JSON.stringify(data))
+loadSites()
 
-load()
+}
+
+function addCat(){
+
+let cats=JSON.parse(localStorage.getItem("cats")||"['전체']")
+cats.push(newCat.value)
+
+localStorage.setItem("cats",JSON.stringify(cats))
+
+init()
+
+}
+
+function renderCatList(cats){
+
+catList.innerHTML=""
+
+cats.forEach((c,i)=>{
+
+if(c=="전체") return
+
+let d=document.createElement("div")
+d.className="row"
+
+d.innerHTML=`
+${c}
+<button onclick="delCat(${i})">삭제</button>
+`
+
+catList.appendChild(d)
+
+})
+
+}
+
+function delCat(i){
+
+let cats=JSON.parse(localStorage.getItem("cats"))
+cats.splice(i,1)
+
+localStorage.setItem("cats",JSON.stringify(cats))
+
+init()
+
+}
+
+function updateCatSelect(cats){
+
+category.innerHTML=""
+
+cats.forEach(c=>{
+let o=document.createElement("option")
+o.text=c
+category.add(o)
+})
 
 }
 
 </script>
-
-</body>
-</html>
