@@ -5,26 +5,32 @@
 <title>관리자</title>
 
 <style>
+
 body{
 font-family:Arial;
 background:#f5f6fa;
 padding:40px;
 }
+
 input,select{
 padding:10px;
 margin:5px 0;
 width:260px;
 }
+
 button{
 padding:8px 14px;
 margin-left:5px;
+cursor:pointer;
 }
+
 .row{
 background:white;
 padding:12px;
 margin-top:10px;
 border-radius:8px;
 }
+
 .icons span{
 font-size:26px;
 margin-right:10px;
@@ -32,10 +38,19 @@ cursor:pointer;
 padding:4px;
 border-radius:6px;
 }
+
 .icons span.active{
 background:#2f80ed;
 color:white;
 }
+
+.editBox{
+background:#fff7e6;
+padding:12px;
+border-radius:8px;
+margin-top:10px;
+}
+
 </style>
 </head>
 
@@ -48,40 +63,48 @@ color:white;
 </div>
 
 <div id="adminBox" style="display:none">
-<h2>사이트 추가</h2>
+
+<h2>사이트 추가 / 수정</h2>
 
 <input id="name" placeholder="사이트 이름"><br>
 <input id="url" placeholder="URL"><br>
 
 <select id="category"></select>
+
 <div class="icons" id="icons"></div>
+
 <br>
-<button onclick="add()">추가</button>
+
+<button onclick="save()">저장</button>
 
 <h2>카테고리 관리</h2>
+
 <input id="newCat" placeholder="카테고리 이름">
 <button onclick="addCat()">추가</button>
+
 <div id="catList"></div>
 
 <h2>사이트 목록</h2>
+
 <div id="list"></div>
+
 </div>
 
 <script>
 
-const PASSWORD="wlstjfrladbstlr"
+const PASSWORD="wlstjferladbstlr"
 
 let picked="🌐"
+let editIndex=null
+
 const iconList=["🌐","📊","🏥","📁","⭐","💬","📅","🧾"]
 
 function login(){
 
-const input=document.getElementById("pw").value
+if(document.getElementById("pw").value===PASSWORD){
 
-if(input===PASSWORD){
-
-document.getElementById("loginBox").style.display="none"
-document.getElementById("adminBox").style.display="block"
+loginBox.style.display="none"
+adminBox.style.display="block"
 
 init()
 
@@ -126,18 +149,32 @@ box.appendChild(s)
 
 }
 
-function add(){
+function save(){
 
 let data=JSON.parse(localStorage.getItem("sites")||"[]")
 
-data.push({
-name:document.getElementById("name").value,
-url:document.getElementById("url").value,
+let site={
+name:name.value,
+url:url.value,
 icon:picked,
-category:document.getElementById("category").value
-})
+category:category.value
+}
+
+if(editIndex===null){
+
+data.push(site)
+
+}else{
+
+data[editIndex]=site
+editIndex=null
+
+}
 
 localStorage.setItem("sites",JSON.stringify(data))
+
+name.value=""
+url.value=""
 
 loadSites()
 
@@ -146,7 +183,7 @@ loadSites()
 function loadSites(){
 
 let data=JSON.parse(localStorage.getItem("sites")||"[]")
-let list=document.getElementById("list")
+
 list.innerHTML=""
 
 data.forEach((s,i)=>{
@@ -156,6 +193,7 @@ d.className="row"
 
 d.innerHTML=`
 ${s.icon} ${s.name} (${s.category})
+<button onclick="edit(${i})">수정</button>
 <button onclick="del(${i})">삭제</button>
 `
 
@@ -165,12 +203,33 @@ list.appendChild(d)
 
 }
 
+function edit(i){
+
+let data=JSON.parse(localStorage.getItem("sites")||"[]")
+let s=data[i]
+
+name.value=s.name
+url.value=s.url
+category.value=s.category
+
+picked=s.icon
+
+editIndex=i
+
+renderIcons()
+
+window.scrollTo({top:0,behavior:"smooth"})
+
+}
+
 function del(i){
 
 let data=JSON.parse(localStorage.getItem("sites")||"[]")
+
 data.splice(i,1)
 
 localStorage.setItem("sites",JSON.stringify(data))
+
 loadSites()
 
 }
@@ -178,7 +237,8 @@ loadSites()
 function addCat(){
 
 let cats=JSON.parse(localStorage.getItem("cats")||'["전체"]')
-cats.push(document.getElementById("newCat").value)
+
+cats.push(newCat.value)
 
 localStorage.setItem("cats",JSON.stringify(cats))
 
@@ -188,7 +248,6 @@ init()
 
 function renderCatList(cats){
 
-let catList=document.getElementById("catList")
 catList.innerHTML=""
 
 cats.forEach((c,i)=>{
@@ -212,6 +271,7 @@ catList.appendChild(d)
 function delCat(i){
 
 let cats=JSON.parse(localStorage.getItem("cats")||'["전체"]')
+
 cats.splice(i,1)
 
 localStorage.setItem("cats",JSON.stringify(cats))
@@ -222,13 +282,14 @@ init()
 
 function updateCatSelect(cats){
 
-let select=document.getElementById("category")
-select.innerHTML=""
+category.innerHTML=""
 
 cats.forEach(c=>{
+
 let o=document.createElement("option")
 o.text=c
-select.add(o)
+category.add(o)
+
 })
 
 }
