@@ -5,31 +5,26 @@
 <title>관리자</title>
 
 <style>
-
 body{
 font-family:Arial;
 background:#f5f6fa;
 padding:40px;
 }
-
 input,select{
 padding:10px;
 margin:5px 0;
 width:260px;
 }
-
 button{
 padding:8px 14px;
 margin-left:5px;
 }
-
 .row{
 background:white;
 padding:12px;
 margin-top:10px;
 border-radius:8px;
 }
-
 .icons span{
 font-size:26px;
 margin-right:10px;
@@ -37,71 +32,62 @@ cursor:pointer;
 padding:4px;
 border-radius:6px;
 }
-
 .icons span.active{
 background:#2f80ed;
 color:white;
 }
-
 </style>
 </head>
 
 <body>
 
-<div id="login">
-
+<div id="loginBox">
 <h2>관리자 로그인</h2>
 <input type="password" id="pw">
 <button onclick="login()">접속</button>
-
 </div>
 
-<div id="admin" style="display:none">
-
+<div id="adminBox" style="display:none">
 <h2>사이트 추가</h2>
 
 <input id="name" placeholder="사이트 이름"><br>
 <input id="url" placeholder="URL"><br>
 
 <select id="category"></select>
-
 <div class="icons" id="icons"></div>
-
 <br>
-
 <button onclick="add()">추가</button>
 
 <h2>카테고리 관리</h2>
-
 <input id="newCat" placeholder="카테고리 이름">
 <button onclick="addCat()">추가</button>
-
 <div id="catList"></div>
 
 <h2>사이트 목록</h2>
-
 <div id="list"></div>
-
 </div>
 
 <script>
 
-const PASSWORD="wlstjfrladbstlr"
+const PASSWORD="wlstjferladbstlr"
 
 let picked="🌐"
-
 const iconList=["🌐","📊","🏥","📁","⭐","💬","📅","🧾"]
 
 function login(){
 
-if(pw.value===PASSWORD){
+const input=document.getElementById("pw").value
 
-login.style.display="none"
-admin.style.display="block"
+if(input===PASSWORD){
+
+document.getElementById("loginBox").style.display="none"
+document.getElementById("adminBox").style.display="block"
 
 init()
 
-}else alert("비밀번호 틀림")
+}else{
+alert("비밀번호 틀림")
+}
 
 }
 
@@ -109,7 +95,8 @@ function init(){
 
 renderIcons()
 
-let cats=JSON.parse(localStorage.getItem("cats")||"['전체']")
+let cats=JSON.parse(localStorage.getItem("cats")||'["전체"]')
+
 updateCatSelect(cats)
 renderCatList(cats)
 loadSites()
@@ -126,7 +113,7 @@ iconList.forEach(i=>{
 let s=document.createElement("span")
 s.innerText=i
 
-if(i==picked) s.classList.add("active")
+if(i===picked) s.classList.add("active")
 
 s.onclick=()=>{
 picked=i
@@ -144,10 +131,10 @@ function add(){
 let data=JSON.parse(localStorage.getItem("sites")||"[]")
 
 data.push({
-name:name.value,
-url:url.value,
+name:document.getElementById("name").value,
+url:document.getElementById("url").value,
 icon:picked,
-category:category.value
+category:document.getElementById("category").value
 })
 
 localStorage.setItem("sites",JSON.stringify(data))
@@ -159,6 +146,7 @@ loadSites()
 function loadSites(){
 
 let data=JSON.parse(localStorage.getItem("sites")||"[]")
+let list=document.getElementById("list")
 list.innerHTML=""
 
 data.forEach((s,i)=>{
@@ -189,8 +177,8 @@ loadSites()
 
 function addCat(){
 
-let cats=JSON.parse(localStorage.getItem("cats")||"['전체']")
-cats.push(newCat.value)
+let cats=JSON.parse(localStorage.getItem("cats")||'["전체"]')
+cats.push(document.getElementById("newCat").value)
 
 localStorage.setItem("cats",JSON.stringify(cats))
 
@@ -200,11 +188,12 @@ init()
 
 function renderCatList(cats){
 
+let catList=document.getElementById("catList")
 catList.innerHTML=""
 
 cats.forEach((c,i)=>{
 
-if(c=="전체") return
+if(c==="전체") return
 
 let d=document.createElement("div")
 d.className="row"
@@ -222,7 +211,7 @@ catList.appendChild(d)
 
 function delCat(i){
 
-let cats=JSON.parse(localStorage.getItem("cats"))
+let cats=JSON.parse(localStorage.getItem("cats")||'["전체"]')
 cats.splice(i,1)
 
 localStorage.setItem("cats",JSON.stringify(cats))
@@ -233,14 +222,18 @@ init()
 
 function updateCatSelect(cats){
 
-category.innerHTML=""
+let select=document.getElementById("category")
+select.innerHTML=""
 
 cats.forEach(c=>{
 let o=document.createElement("option")
 o.text=c
-category.add(o)
+select.add(o)
 })
 
 }
 
 </script>
+
+</body>
+</html>
