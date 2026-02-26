@@ -66,8 +66,8 @@ margin-top:10px;
 
 <h2>사이트 추가 / 수정</h2>
 
-<input id="name" placeholder="사이트 이름"><br>
-<input id="url" placeholder="URL"><br>
+<input id="siteName" placeholder="사이트 이름"><br>
+<input id="siteUrl" placeholder="URL"><br>
 
 <select id="category"></select>
 
@@ -154,8 +154,8 @@ function save(){
 let data=JSON.parse(localStorage.getItem("sites")||"[]")
 
 let site={
-name:name.value,
-url:url.value,
+name:siteName.value,
+url:siteUrl.value,
 icon:picked,
 category:category.value
 }
@@ -173,8 +173,8 @@ editIndex=null
 
 localStorage.setItem("sites",JSON.stringify(data))
 
-name.value=""
-url.value=""
+siteName.value=""
+siteUrl.value=""
 
 loadSites()
 
@@ -208,8 +208,8 @@ function edit(i){
 let data=JSON.parse(localStorage.getItem("sites")||"[]")
 let s=data[i]
 
-name.value=s.name
-url.value=s.url
+siteName.value=s.name
+siteUrl.value=s.url
 category.value=s.category
 
 picked=s.icon
