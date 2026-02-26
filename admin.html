@@ -7,38 +7,44 @@
 <style>
 body{
 font-family:Arial;
-background:#f4f6f9;
+background:#f5f6fa;
 padding:40px;
 }
 
 input,select{
-padding:8px;
-margin:5px;
+padding:10px;
+margin:5px 0;
 width:300px;
 }
 
 button{
-padding:8px 14px;
-margin:5px;
-cursor:pointer;
+padding:10px 16px;
+margin-left:5px;
 }
 
-.site{
+.row{
 background:white;
 padding:15px;
-margin:10px 0;
+margin-top:10px;
 border-radius:8px;
 }
 
+.iconPick span{
+font-size:24px;
+margin-right:10px;
+cursor:pointer;
+}
 </style>
 </head>
 
 <body>
 
 <div id="login">
+
 <h2>관리자 로그인</h2>
-<input id="pw" type="password">
-<button onclick="check()">입장</button>
+<input type="password" id="pw" placeholder="비밀번호">
+<button onclick="login()">접속</button>
+
 </div>
 
 <div id="admin" style="display:none">
@@ -48,126 +54,103 @@ border-radius:8px;
 <input id="name" placeholder="사이트 이름"><br>
 <input id="url" placeholder="URL"><br>
 
-<select id="category"></select><br>
+<div class="iconPick">
+아이콘 선택<br>
+<span onclick="pick('🌐')">🌐</span>
+<span onclick="pick('📊')">📊</span>
+<span onclick="pick('🏥')">🏥</span>
+<span onclick="pick('📁')">📁</span>
+<span onclick="pick('⭐')">⭐</span>
+</div>
 
-<select id="icon">
-<option value="https://cdn-icons-png.flaticon.com/512/25/25694.png">포털</option>
-<option value="https://cdn-icons-png.flaticon.com/512/1828/1828919.png">차트</option>
-<option value="https://cdn-icons-png.flaticon.com/512/2991/2991148.png">병원</option>
-<option value="https://cdn-icons-png.flaticon.com/512/3523/3523063.png">문서</option>
-<option value="https://cdn-icons-png.flaticon.com/512/888/888879.png">설정</option>
-<option value="https://cdn-icons-png.flaticon.com/512/2920/2920349.png">통계</option>
-<option value="https://cdn-icons-png.flaticon.com/512/1034/1034131.png">웹</option>
-<option value="https://cdn-icons-png.flaticon.com/512/3064/3064197.png">DB</option>
-<option value="https://cdn-icons-png.flaticon.com/512/3135/3135715.png">사용자</option>
-<option value="https://cdn-icons-png.flaticon.com/512/3524/3524659.png">즐겨찾기</option>
-</select><br>
+<br>
 
-<button onclick="addSite()">추가</button>
+<button onclick="add()">추가</button>
 
-<h2>카테고리</h2>
+<h2>목록</h2>
 
-<input id="newCat">
-<button onclick="addCat()">추가</button>
-
-<div id="catList"></div>
-
-<h2>사이트 목록</h2>
-<div id="siteList"></div>
+<div id="list"></div>
 
 </div>
 
 <script>
 
-function check(){
-if(document.getElementById("pw").value==="wlstjfrladbstlr"){
+const PASSWORD="진설김윤식"
+
+function login(){
+
+if(document.getElementById("pw").value===PASSWORD){
+
 document.getElementById("login").style.display="none"
 document.getElementById("admin").style.display="block"
+
 load()
-}
+
+}else{
+alert("비밀번호 틀림")
 }
 
-let sites=[]
-let categories=[]
+}
+
+let picked="🌐"
+
+function pick(v){
+picked=v
+}
+
+function add(){
+
+let name=document.getElementById("name").value
+let url=document.getElementById("url").value
+
+if(!url)return
+
+let data=JSON.parse(localStorage.getItem("sites")||"[]")
+
+data.push({
+name:name,
+url:url,
+icon:picked
+})
+
+localStorage.setItem("sites",JSON.stringify(data))
+
+load()
+
+}
 
 function load(){
-sites=JSON.parse(localStorage.getItem("sites")||"[]")
-categories=JSON.parse(localStorage.getItem("categories")||'["전체"]')
-draw()
-}
 
-function save(){
-localStorage.setItem("sites",JSON.stringify(sites))
-localStorage.setItem("categories",JSON.stringify(categories))
-draw()
-}
+let data=JSON.parse(localStorage.getItem("sites")||"[]")
+let list=document.getElementById("list")
 
-function draw(){
+list.innerHTML=""
 
-let catSel=document.getElementById("category")
-catSel.innerHTML=""
-categories.forEach(c=>{
-catSel.innerHTML+=`<option>${c}</option>`
-})
+data.forEach((s,i)=>{
 
-let catList=document.getElementById("catList")
-catList.innerHTML=""
-categories.forEach((c,i)=>{
-if(c==="전체")return
-catList.innerHTML+=`
-<div>
-${c}
-<button onclick="delCat(${i})">삭제</button>
-</div>`
-})
+let div=document.createElement("div")
+div.className="row"
 
-let siteList=document.getElementById("siteList")
-siteList.innerHTML=""
-sites.forEach((s,i)=>{
-siteList.innerHTML+=`
-<div class="site">
-${s.name} (${s.category})
-<button onclick="edit(${i})">수정</button>
+div.innerHTML=`
+${s.icon} ${s.name||"(이름없음)"}
 <button onclick="del(${i})">삭제</button>
-</div>`
+`
+
+list.appendChild(div)
+
 })
 
-}
-
-function addSite(){
-let s={
-name:name.value,
-url:url.value,
-category:category.value,
-icon:icon.value
-}
-sites.push(s)
-save()
 }
 
 function del(i){
-sites.splice(i,1)
-save()
-}
 
-function edit(i){
-let s=sites[i]
-let n=prompt("이름",s.name)
-let u=prompt("URL",s.url)
-if(!n||!u)return
-s.name=n
-s.url=u
-save()
-}
+let data=JSON.parse(localStorage.getItem("sites")||"[]")
+data.splice(i,1)
 
-function addCat(){
-categories.push(newCat.value)
-save()
-}
+localStorage.setItem("sites",JSON.stringify(data))
 
-function delCat(i){
-categories.splice(i,1)
-save()
+load()
+
 }
 
 </script>
