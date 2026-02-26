@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>업무 포털</title>
+
+<style>
+
+body{
+font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto;
+background:#f4f6fb;
+margin:0;
+padding:40px;
+}
+
+.container{
+max-width:1300px;
+margin:auto;
+}
+
+h1{
+text-align:center;
+font-size:42px;
+margin-bottom:6px;
+}
+
+.sub{
+text-align:center;
+margin-bottom:35px;
+color:#666;
+}
+
+.top{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:25px;
+}
+
+.search{
+width:320px;
+padding:12px;
+border-radius:10px;
+border:1px solid #ccc;
+font-size:16px;
+}
+
+.login{
+background:#111;
+color:white;
+border:none;
+padding:11px 18px;
+border-radius:10px;
+cursor:pointer;
+}
+
+.categories{
+margin-bottom:20px;
+}
+
+.catBtn{
+border:none;
+background:#e7ebf4;
+padding:9px 15px;
+border-radius:10px;
+margin-right:8px;
+cursor:pointer;
+}
+
+.catActive{
+background:#4c7cff;
+color:white;
+}
+
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+gap:20px;
+}
+
+.card{
+background:white;
+border-radius:16px;
+padding:24px;
+text-align:center;
+cursor:pointer;
+position:relative;
+box-shadow:0 6px 16px rgba(0,0,0,0.08);
+transition:.15s;
+}
+
+.card:hover{
+transform:translateY(-4px);
+}
+
+.icon{
+font-size:32px;
+margin-bottom:10px;
+}
+
+.title{
+font-size:17px;
+font-weight:600;
+}
+
+.category{
+font-size:12px;
+color:#777;
+margin-top:4px;
+}
+
+.star{
+position:absolute;
+top:10px;
+right:12px;
+font-size:20px;
+cursor:pointer;
+}
+
+.adminPanel{
+margin-top:30px;
+text-align:center;
+}
+
+button{
+cursor:pointer;
+}
+
+.manage{
+margin-left:10px;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>업무 포털</h1>
+<div class="sub">자주 사용하는 사이트</div>
+
+<div class="top">
+<input id="search" class="search" placeholder="검색">
+<div>
+<button class="login" onclick="login()">로그인</button>
+<button id="manageBtn" class="manage" style="display:none" onclick="openCategoryManager()">카테고리 관리</button>
+</div>
+</div>
+
+<div class="categories" id="cats"></div>
+<div id="grid" class="grid"></div>
+
+<div id="adminPanel" class="adminPanel" style="display:none">
+<button onclick="openAdd()">사이트 추가</button>
+</div>
+
+</div>
+
+<script>
+
+let sites = JSON.parse(localStorage.getItem("portal_sites") || "[]")
+let user = localStorage.getItem("portal_user") || ""
+let favorites = JSON.parse(localStorage.getItem("fav_"+user) || "[]")
+
+let admin = false
+
+if(sites.length===0){
+
+sites = [
+{
+name:"환자 내원 분석",
+url:"https://sdsd824-ux.github.io/visitrate/",
+category:"분석",
+icon:"📊"
+}
+]
+
+saveSites()
+
+}
+
+function saveSites(){
+localStorage.setItem("portal_sites",JSON.stringify(sites))
+}
+
+function saveFav(){
+localStorage.setItem("fav_"+user,JSON.stringify(favorites))
+}
+
+function getCategories(){
+
+let arr=["전체"]
+
+sites.forEach(s=>{
+if(!arr.includes(s.category)) arr.push(s.category)
+})
+
+return arr
+
+}
+
+function renderCategories(){
+
+const el=document.getElementById("cats")
+el.innerHTML=""
+
+getCategories().forEach(c=>{
+
+const b=document.createElement("button")
+b.className="catBtn"
+b.innerText=c
+
+b.onclick=()=>filterCategory(c,b)
+
+el.appendChild(b)
+
+})
+
+el.firstChild.classList.add("catActive")
+
+}
+
+function renderSites(list=sites){
+
+const grid=document.getElementById("grid")
+grid.innerHTML=""
+
+let sorted=[...list]
+
+sorted.sort((a,b)=>{
+return (favorites.includes(b.name)?1:0)-(favorites.includes(a.name)?1:0)
+})
+
+sorted.forEach((s,i)=>{
+
+const card=document.createElement("div")
+card.className="card"
+card.draggable=true
+
+card.ondragstart=e=>{
+e.dataTransfer.setData("index",i)
+}
+
+card.ondrop=e=>{
+
+let from=e.dataTransfer.getData("index")
+
+let temp=sites[from]
+sites.splice(from,1)
+sites.splice(i,0,temp)
+
+saveSites()
+renderSites()
+
+}
+
+card.ondragover=e=>e.preventDefault()
+
+card.onclick=()=>window.open(s.url,"_blank")
+
+let star = favorites.includes(s.name) ? "⭐" : "☆"
+
+card.innerHTML=`
+<div class="star">${star}</div>
+<div class="icon">${s.icon}</div>
+<div class="title">${s.name}</div>
+<div class="category">${s.category}</div>
+`
+
+card.querySelector(".star").onclick=(e)=>{
+
+e.stopPropagation()
+
+if(favorites.includes(s.name)){
+favorites=favorites.filter(f=>f!==s.name)
+}else{
+favorites.push(s.name)
+}
+
+saveFav()
+renderSites()
+
+}
+
+if(admin){
+
+card.oncontextmenu=(e)=>{
+
+e.preventDefault()
+
+let act = prompt("1 수정 / 2 삭제")
+
+if(act==1) editSite(s)
+if(act==2) deleteSite(s)
+
+}
+
+}
+
+grid.appendChild(card)
+
+})
+
+}
+
+function filterCategory(cat,btn){
+
+document.querySelectorAll(".catBtn").forEach(b=>b.classList.remove("catActive"))
+btn.classList.add("catActive")
+
+if(cat==="전체") renderSites()
+else renderSites(sites.filter(s=>s.category===cat))
+
+}
+
+document.getElementById("search").oninput=e=>{
+
+let t=e.target.value.toLowerCase()
+
+renderSites(sites.filter(s=>s.name.toLowerCase().includes(t)))
+
+}
+
+function login(){
+
+let name=prompt("이름")
+
+if(!name) return
+
+user=name
+localStorage.setItem("portal_user",name)
+
+favorites = JSON.parse(localStorage.getItem("fav_"+user) || "[]")
+
+if(name==="김윤식"){
+
+let pw=prompt("관리자 비밀번호")
+
+if(pw==="진설김윤식"){
+
+admin=true
+document.getElementById("adminPanel").style.display="block"
+document.getElementById("manageBtn").style.display="inline-block"
+
+}
+
+}
+
+renderSites()
+
+}
+
+function openAdd(){
+
+let name=prompt("사이트 이름")
+let url=prompt("URL")
+let category=prompt("카테고리")
+let icon=prompt("아이콘 (예 📊)")
+
+sites.push({name,url,category,icon})
+
+saveSites()
+renderCategories()
+renderSites()
+
+}
+
+function editSite(site){
+
+let name=prompt("이름",site.name)
+let url=prompt("URL",site.url)
+let cat=prompt("카테고리",site.category)
+let icon=prompt("아이콘",site.icon)
+
+site.name=name
+site.url=url
+site.category=cat
+site.icon=icon
+
+saveSites()
+renderCategories()
+renderSites()
+
+}
+
+function deleteSite(site){
+
+if(!confirm("삭제?")) return
+
+sites=sites.filter(s=>s!==site)
+
+saveSites()
+renderCategories()
+renderSites()
+
+}
+
+function openCategoryManager(){
+
+let list=getCategories().join("\n")
+
+let name=prompt("카테고리 추가 입력\n\n현재:\n"+list)
+
+if(!name) return
+
+sites.push({
+name:"새 사이트",
+url:"https://",
+category:name,
+icon:"📁"
+})
+
+saveSites()
+renderCategories()
+renderSites()
+
+}
+
+renderCategories()
+renderSites()
+
+</script>
+
+</body>
+</html>
