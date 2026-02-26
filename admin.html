@@ -29,6 +29,9 @@ background:white;
 padding:12px;
 margin-top:10px;
 border-radius:8px;
+display:flex;
+justify-content:space-between;
+align-items:center;
 }
 
 .icons span{
@@ -44,11 +47,10 @@ background:#2f80ed;
 color:white;
 }
 
-.editBox{
-background:#fff7e6;
-padding:12px;
-border-radius:8px;
-margin-top:10px;
+.editing{
+color:#e67e22;
+font-weight:bold;
+margin-left:10px;
 }
 
 </style>
@@ -64,7 +66,10 @@ margin-top:10px;
 
 <div id="adminBox" style="display:none">
 
-<h2>사이트 추가 / 수정</h2>
+<h2>
+사이트 추가 / 수정
+<span id="editingText"></span>
+</h2>
 
 <input id="siteName" placeholder="사이트 이름"><br>
 <input id="siteUrl" placeholder="URL"><br>
@@ -76,6 +81,7 @@ margin-top:10px;
 <br>
 
 <button onclick="save()">저장</button>
+<button onclick="cancelEdit()">취소</button>
 
 <h2>카테고리 관리</h2>
 
@@ -101,7 +107,7 @@ const iconList=["🌐","📊","🏥","📁","⭐","💬","📅","🧾"]
 
 function login(){
 
-if(document.getElementById("pw").value===PASSWORD){
+if(pw.value===PASSWORD){
 
 loginBox.style.display="none"
 adminBox.style.display="block"
@@ -128,8 +134,7 @@ loadSites()
 
 function renderIcons(){
 
-let box=document.getElementById("icons")
-box.innerHTML=""
+icons.innerHTML=""
 
 iconList.forEach(i=>{
 
@@ -143,13 +148,18 @@ picked=i
 renderIcons()
 }
 
-box.appendChild(s)
+icons.appendChild(s)
 
 })
 
 }
 
 function save(){
+
+if(siteName.value.trim()=="" || siteUrl.value.trim()==""){
+alert("이름 / URL 입력")
+return
+}
 
 let data=JSON.parse(localStorage.getItem("sites")||"[]")
 
@@ -161,23 +171,32 @@ category:category.value
 }
 
 if(editIndex===null){
-
 data.push(site)
-
 }else{
-
 data[editIndex]=site
-editIndex=null
-
 }
 
 localStorage.setItem("sites",JSON.stringify(data))
 
-siteName.value=""
-siteUrl.value=""
-
+clearForm()
 loadSites()
 
+}
+
+function clearForm(){
+
+siteName.value=""
+siteUrl.value=""
+picked="🌐"
+editIndex=null
+editingText.innerText=""
+
+renderIcons()
+
+}
+
+function cancelEdit(){
+clearForm()
 }
 
 function loadSites(){
@@ -192,9 +211,11 @@ let d=document.createElement("div")
 d.className="row"
 
 d.innerHTML=`
-${s.icon} ${s.name} (${s.category})
+<div>${s.icon} ${s.name} (${s.category})</div>
+<div>
 <button onclick="edit(${i})">수정</button>
 <button onclick="del(${i})">삭제</button>
+</div>
 `
 
 list.appendChild(d)
@@ -215,6 +236,8 @@ category.value=s.category
 picked=s.icon
 
 editIndex=i
+
+editingText.innerHTML='<span class="editing">(수정 중)</span>'
 
 renderIcons()
 
@@ -238,9 +261,18 @@ function addCat(){
 
 let cats=JSON.parse(localStorage.getItem("cats")||'["전체"]')
 
-cats.push(newCat.value)
+let name=newCat.value.trim()
+
+if(name=="" || cats.includes(name)){
+alert("이미 존재하거나 빈 이름")
+return
+}
+
+cats.push(name)
 
 localStorage.setItem("cats",JSON.stringify(cats))
+
+newCat.value=""
 
 init()
 
@@ -258,7 +290,7 @@ let d=document.createElement("div")
 d.className="row"
 
 d.innerHTML=`
-${c}
+<div>${c}</div>
 <button onclick="delCat(${i})">삭제</button>
 `
 
