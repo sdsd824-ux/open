@@ -21,18 +21,13 @@ margin:auto;
 h1{
 text-align:center;
 font-size:42px;
-margin-bottom:5px;
+margin-bottom:10px;
 }
 
 .sub{
 text-align:center;
-margin-bottom:25px;
+margin-bottom:30px;
 color:#666;
-}
-
-.user{
-text-align:center;
-margin-bottom:20px;
 }
 
 .topbar{
@@ -42,39 +37,17 @@ align-items:center;
 margin-bottom:20px;
 }
 
+.user{
+font-size:14px;
+color:#555;
+}
+
 .search{
-width:300px;
+width:280px;
 padding:10px;
-font-size:16px;
+font-size:15px;
 border-radius:8px;
 border:1px solid #ccc;
-}
-
-.loginBtn{
-padding:10px 18px;
-border:none;
-background:#222;
-color:white;
-border-radius:8px;
-cursor:pointer;
-}
-
-.categories{
-margin-bottom:20px;
-}
-
-.catBtn{
-border:none;
-background:#e6e9f2;
-padding:8px 14px;
-border-radius:8px;
-margin-right:6px;
-cursor:pointer;
-}
-
-.catActive{
-background:#4c7cff;
-color:white;
 }
 
 .grid{
@@ -91,10 +64,16 @@ text-align:center;
 cursor:pointer;
 position:relative;
 box-shadow:0 4px 12px rgba(0,0,0,0.06);
+transition:.15s;
+}
+
+.card:hover{
+transform:translateY(-4px);
 }
 
 .icon{
-font-size:28px;
+width:38px;
+height:38px;
 margin-bottom:10px;
 }
 
@@ -106,57 +85,10 @@ font-size:18px;
 cursor:pointer;
 }
 
-.edit{
-position:absolute;
-top:10px;
-left:12px;
-font-size:14px;
-cursor:pointer;
-display:none;
-}
-
-.card:hover .edit{
-display:block;
-}
-
-.admin{
-margin-top:30px;
-text-align:center;
-}
-
-button{
-cursor:pointer;
-}
-
-.manager button{
-margin:4px;
-padding:8px 12px;
-}
-
-.editor{
-background:white;
-padding:20px;
-border-radius:10px;
-margin-bottom:20px;
-display:none;
-}
-
-.editor input,
-.editor select{
-width:100%;
-padding:10px;
-margin-bottom:10px;
-}
-
-.iconSelect span{
-font-size:22px;
-margin:4px;
-cursor:pointer;
-}
-
-.iconActive{
-background:#ddd;
-border-radius:6px;
+.category{
+font-size:12px;
+color:#888;
+margin-top:4px;
 }
 
 </style>
@@ -168,134 +100,78 @@ border-radius:6px;
 
 <h1>업무 포털</h1>
 <div class="sub">자주 사용하는 사이트</div>
-<div class="user" id="userText"></div>
 
 <div class="topbar">
 <input class="search" placeholder="검색" id="search">
-<button class="loginBtn" onclick="login()">로그인</button>
+<div class="user" id="userBox"></div>
 </div>
-
-<div id="editor" class="editor">
-
-<input id="siteName" placeholder="사이트 이름">
-<input id="siteUrl" placeholder="사이트 URL">
-
-<select id="siteCategory"></select>
-
-<div class="iconSelect" id="iconSelect"></div>
-
-<button onclick="saveSite()">저장</button>
-<button onclick="deleteSite()">삭제</button>
-
-</div>
-
-<div class="categories" id="cats"></div>
 
 <div id="grid" class="grid"></div>
-
-<div class="admin manager" id="adminPanel" style="display:none">
-<button onclick="openAdd()">사이트 추가</button>
-<button onclick="addCategory()">카테고리 추가</button>
-<button onclick="editCategory()">카테고리 수정</button>
-<button onclick="deleteCategory()">카테고리 삭제</button>
-</div>
 
 </div>
 
 <script>
 
-let user=localStorage.getItem("user") || ""
-let admin=false
+let currentUser=localStorage.getItem("portal_user")
 
-if(user==="김윤식") admin=true
+if(!currentUser){
+currentUser=prompt("이름 입력")
+localStorage.setItem("portal_user",currentUser)
+}
 
-document.getElementById("userText").innerText=user?`사용자 : ${user}`:""
+document.getElementById("userBox").innerText="사용자 : "+currentUser
 
-if(admin) document.getElementById("adminPanel").style.display="block"
-
-let icons=["📊","📁","📅","📞","🧾","📈","💬","🌐","🖥","🧠","📌","🔎"]
-
-let data=JSON.parse(localStorage.getItem("portal_data")||"null")
-
-if(!data){
-
-data={
-categories:["전체","분석"],
-sites:[
+let defaultSites=[
 {
 name:"환자 내원 분석",
 url:"https://sdsd824-ux.github.io/visitrate/",
-icon:"📊",
-category:"분석"
+category:"업무",
+icon:"auto"
 }
 ]
-}
 
-save()
+let sites=JSON.parse(localStorage.getItem("portal_sites")||"null") || defaultSites
 
-}
-
-let favorites=JSON.parse(localStorage.getItem("fav_"+user)||"[]")
-
-let selectedCategory="전체"
-let editingIndex=null
-let selectedIcon="📊"
-
-function save(){
-localStorage.setItem("portal_data",JSON.stringify(data))
-}
-
-function renderCats(){
-
-let el=document.getElementById("cats")
-el.innerHTML=""
-
-data.categories.forEach(cat=>{
-
-let b=document.createElement("button")
-b.className="catBtn"+(cat===selectedCategory?" catActive":"")
-
-b.innerText=cat
-
-b.onclick=()=>{
-selectedCategory=cat
-render()
-}
-
-el.appendChild(b)
-
-})
-
-}
+let favorites=JSON.parse(localStorage.getItem("fav_"+currentUser)||"[]")
 
 function render(){
 
-renderCats()
+let keyword=document.getElementById("search").value.toLowerCase()
 
 let grid=document.getElementById("grid")
 grid.innerHTML=""
 
-let keyword=document.getElementById("search").value.toLowerCase()
+let sorted=[...sites].sort((a,b)=>{
+let af=favorites.includes(a.url)?0:1
+let bf=favorites.includes(b.url)?0:1
+return af-bf
+})
 
-data.sites.forEach((site,i)=>{
-
-if(selectedCategory!=="전체" && site.category!==selectedCategory) return
+sorted.forEach(site=>{
 
 if(keyword && !site.name.toLowerCase().includes(keyword)) return
 
 let card=document.createElement("div")
 card.className="card"
 
+let icon=""
+
+if(site.icon==="auto"){
+icon=`https://www.google.com/s2/favicons?sz=64&domain_url=${site.url}`
+}else{
+icon=site.icon
+}
+
 let star=favorites.includes(site.url)?"★":"☆"
 
 card.innerHTML=`
-<div class="edit" onclick="editSite(${i})">수정</div>
 <div class="star">${star}</div>
-<div class="icon">${site.icon}</div>
+<img class="icon" src="${icon}">
 <div><b>${site.name}</b></div>
+<div class="category">${site.category||""}</div>
 `
 
-card.onclick=()=>window.open(site.url)
+card.onclick=()=>window.open(site.url,"_blank")
 
 card.querySelector(".star").onclick=(e)=>{
 e.stopPropagation()
@@ -316,200 +192,13 @@ favorites=favorites.filter(f=>f!==url)
 favorites.push(url)
 }
 
-localStorage.setItem("fav_"+user,JSON.stringify(favorites))
-
+localStorage.setItem("fav_"+currentUser,JSON.stringify(favorites))
 render()
-
-}
-
-function login(){
-
-let name=prompt("이름")
-
-if(!name) return
-
-localStorage.setItem("user",name)
-
-location.reload()
-
-}
-
-function openAdd(){
-
-editingIndex=null
-
-document.getElementById("editor").style.display="block"
-
-document.getElementById("siteName").value=""
-document.getElementById("siteUrl").value=""
-
-}
-
-function editSite(i){
-
-if(!admin) return
-
-editingIndex=i
-
-let s=data.sites[i]
-
-document.getElementById("editor").style.display="block"
-
-document.getElementById("siteName").value=s.name
-document.getElementById("siteUrl").value=s.url
-document.getElementById("siteCategory").value=s.category
-
-selectedIcon=s.icon
-
-highlightIcon()
-
-}
-
-function saveSite(){
-
-let name=document.getElementById("siteName").value
-let url=document.getElementById("siteUrl").value
-let cat=document.getElementById("siteCategory").value
-
-let obj={
-name,
-url,
-icon:selectedIcon,
-category:cat
-}
-
-if(editingIndex===null){
-
-data.sites.push(obj)
-
-}else{
-
-data.sites[editingIndex]=obj
-
-}
-
-save()
-render()
-
-document.getElementById("editor").style.display="none"
-
-}
-
-function deleteSite(){
-
-if(editingIndex===null) return
-
-data.sites.splice(editingIndex,1)
-
-save()
-render()
-
-document.getElementById("editor").style.display="none"
-
-}
-
-function addCategory(){
-
-let name=prompt("카테고리 이름")
-
-if(!name) return
-
-data.categories.push(name)
-
-save()
-render()
-
-updateCategorySelect()
-
-}
-
-function editCategory(){
-
-let old=prompt("기존 이름")
-
-let nw=prompt("새 이름")
-
-data.categories=data.categories.map(c=>c===old?nw:c)
-
-save()
-render()
-updateCategorySelect()
-
-}
-
-function deleteCategory(){
-
-let name=prompt("삭제할 카테고리")
-
-data.categories=data.categories.filter(c=>c!==name)
-
-save()
-render()
-updateCategorySelect()
-
-}
-
-function updateCategorySelect(){
-
-let sel=document.getElementById("siteCategory")
-
-sel.innerHTML=""
-
-data.categories.forEach(c=>{
-
-let o=document.createElement("option")
-o.value=c
-o.textContent=c
-
-sel.appendChild(o)
-
-})
-
-}
-
-function renderIcons(){
-
-let wrap=document.getElementById("iconSelect")
-
-icons.forEach(i=>{
-
-let s=document.createElement("span")
-
-s.innerText=i
-
-s.onclick=()=>{
-
-selectedIcon=i
-highlightIcon()
-
-}
-
-wrap.appendChild(s)
-
-})
-
-}
-
-function highlightIcon(){
-
-document.querySelectorAll("#iconSelect span").forEach(s=>{
-
-s.classList.remove("iconActive")
-
-if(s.innerText===selectedIcon){
-
-s.classList.add("iconActive")
-
-}
-
-})
 
 }
 
 document.getElementById("search").addEventListener("input",render)
 
-renderIcons()
-updateCategorySelect()
 render()
 
 </script>
