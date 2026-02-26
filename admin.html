@@ -1,1 +1,187 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>업무포털 관리자</title>
 
+<style>
+
+body{
+font-family:Arial;
+background:#f4f6fb;
+padding:40px;
+}
+
+.container{
+max-width:900px;
+margin:auto;
+}
+
+h1{
+margin-bottom:20px;
+}
+
+input,select{
+padding:10px;
+margin:6px 0;
+width:100%;
+}
+
+button{
+padding:10px 14px;
+margin-top:10px;
+cursor:pointer;
+}
+
+.site{
+background:white;
+padding:14px;
+border-radius:8px;
+margin-bottom:10px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container" id="app" style="display:none">
+
+<h1>관리자</h1>
+
+<h3>사이트 추가</h3>
+
+<input id="name" placeholder="사이트 이름">
+<input id="url" placeholder="URL">
+
+<select id="category"></select>
+
+<select id="icon">
+<option value="auto">자동 아이콘</option>
+<option value="https://cdn-icons-png.flaticon.com/512/25/25231.png">기본</option>
+<option value="https://cdn-icons-png.flaticon.com/512/732/732212.png">문서</option>
+<option value="https://cdn-icons-png.flaticon.com/512/906/906334.png">차트</option>
+</select>
+
+<button onclick="addSite()">추가</button>
+
+<h3>카테고리 관리</h3>
+
+<input id="newCat" placeholder="카테고리 이름">
+<button onclick="addCat()">카테고리 추가</button>
+
+<h3>사이트 목록</h3>
+<div id="list"></div>
+
+</div>
+
+<script>
+
+let pass=prompt("관리자 비밀번호")
+
+if(pass==="진설김윤식"){
+document.getElementById("app").style.display="block"
+}else{
+alert("비밀번호 틀림")
+throw new Error()
+}
+
+let sites=JSON.parse(localStorage.getItem("portal_sites")||"[]")
+let cats=JSON.parse(localStorage.getItem("portal_cats")||'["업무"]')
+
+function save(){
+localStorage.setItem("portal_sites",JSON.stringify(sites))
+localStorage.setItem("portal_cats",JSON.stringify(cats))
+render()
+}
+
+function render(){
+
+let list=document.getElementById("list")
+list.innerHTML=""
+
+let sel=document.getElementById("category")
+sel.innerHTML=""
+
+cats.forEach(c=>{
+let o=document.createElement("option")
+o.value=c
+o.textContent=c
+sel.appendChild(o)
+})
+
+sites.forEach((s,i)=>{
+
+let div=document.createElement("div")
+div.className="site"
+
+div.innerHTML=`
+<div>
+<b>${s.name}</b>
+<div style="font-size:12px;color:#666">${s.category}</div>
+</div>
+<div>
+<button onclick="editSite(${i})">수정</button>
+<button onclick="delSite(${i})">삭제</button>
+</div>
+`
+
+list.appendChild(div)
+
+})
+
+}
+
+function addSite(){
+
+let name=document.getElementById("name").value
+let url=document.getElementById("url").value
+let category=document.getElementById("category").value
+let icon=document.getElementById("icon").value
+
+sites.push({name,url,category,icon})
+
+save()
+
+}
+
+function delSite(i){
+sites.splice(i,1)
+save()
+}
+
+function editSite(i){
+
+let s=sites[i]
+
+let name=prompt("이름",s.name)
+let url=prompt("URL",s.url)
+
+s.name=name
+s.url=url
+
+save()
+
+}
+
+function addCat(){
+
+let c=document.getElementById("newCat").value
+
+if(!c) return
+
+cats.push(c)
+
+save()
+
+}
+
+render()
+
+</script>
+
+</body>
+</html>
