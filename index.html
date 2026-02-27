@@ -7,9 +7,7 @@
 
 <style>
 
-*{
-box-sizing:border-box;
-}
+*{box-sizing:border-box;}
 
 body{
 font-family:Arial;
@@ -18,43 +16,38 @@ margin:0;
 padding:40px;
 }
 
-/* 헤더 */
-
 .header{
 text-align:center;
-margin-bottom:35px;
+margin-bottom:30px;
 }
 
 .logo{
-width:300px;
+width:260px;
 max-width:90%;
-margin-bottom:40px;
 }
 
 .title{
-font-size:42px;
+font-size:36px;
 font-weight:800;
+margin-top:10px;
 }
-
-/* 검색 */
 
 .top{
 display:flex;
 gap:10px;
-margin-bottom:20px;
+margin:20px 0;
 }
 
 #search{
 flex:1;
-padding:14px;
+padding:12px;
 font-size:16px;
 border-radius:8px;
 border:1px solid #ccc;
 }
 
 #searchBtn{
-padding:14px 26px;
-font-size:16px;
+padding:12px 20px;
 border:none;
 background:#2f80ed;
 color:white;
@@ -62,21 +55,18 @@ border-radius:8px;
 cursor:pointer;
 }
 
-/* 카테고리 */
-
 .tabs{
-margin-bottom:25px;
 display:flex;
 flex-wrap:wrap;
 gap:8px;
+margin-bottom:20px;
 }
 
 .tab{
 background:#e4e6eb;
-padding:8px 14px;
+padding:8px 12px;
 border-radius:8px;
 cursor:pointer;
-font-size:14px;
 }
 
 .tab.active{
@@ -84,90 +74,40 @@ background:#2f80ed;
 color:white;
 }
 
-/* 카드 */
-
 .grid{
 display:grid;
-grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
-gap:20px;
-width:100%;
+grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+gap:16px;
 }
 
 .card{
 background:white;
-border-radius:14px;
-padding:22px;
+padding:20px;
+border-radius:12px;
 box-shadow:0 3px 10px rgba(0,0,0,0.08);
 cursor:pointer;
 position:relative;
-transition:0.15s;
-width:100%;
-}
-
-.card:hover{
-transform:translateY(-4px);
-box-shadow:0 6px 18px rgba(0,0,0,0.1);
 }
 
 .icon{
-font-size:32px;
-margin-bottom:10px;
+font-size:30px;
 }
 
 .name{
-font-size:18px;
+margin-top:8px;
 font-weight:bold;
-word-break:keep-all;
 }
-
-.star{
-position:absolute;
-right:12px;
-top:12px;
-font-size:20px;
-cursor:pointer;
-}
-
-/* 모바일 */
 
 @media (max-width:700px){
 
-body{
-padding:16px;
-}
-
-.logo{
-width:180px;
-margin-bottom:20px;
-}
-
-.title{
-font-size:26px;
-}
+body{padding:16px;}
 
 .top{
 flex-direction:column;
 }
 
-#searchBtn{
-width:100%;
-}
-
 .grid{
 grid-template-columns:1fr 1fr;
-gap:12px;
-}
-
-.card{
-padding:16px;
-}
-
-.icon{
-font-size:26px;
-}
-
-.name{
-font-size:15px;
 }
 
 }
@@ -193,77 +133,33 @@ font-size:15px;
 
 <script>
 
+let DATA=null
 let currentCategory="전체"
 
-function load(){
+async function loadData(){
 
-let sites=JSON.parse(localStorage.getItem("sites")||"[]")
-let fav=JSON.parse(localStorage.getItem("fav")||"[]")
-let cats=JSON.parse(localStorage.getItem("cats")||'["전체"]')
+let res=await fetch("data.json")
+DATA=await res.json()
 
-renderTabs(cats)
-
-sites.sort((a,b)=>{
-return (fav.includes(b.url)?1:0)-(fav.includes(a.url)?1:0)
-})
-
-let grid=document.getElementById("grid")
-grid.innerHTML=""
-
-sites.forEach(s=>{
-
-if(currentCategory!="전체" && s.category!=currentCategory) return
-
-let card=document.createElement("div")
-card.className="card"
-
-card.onclick=()=>window.open(s.url)
-
-let star=document.createElement("div")
-star.className="star"
-star.innerHTML=fav.includes(s.url)?"⭐":"☆"
-
-star.onclick=(e)=>{
-e.stopPropagation()
-
-if(fav.includes(s.url)){
-fav=fav.filter(v=>v!==s.url)
-}else{
-fav.push(s.url)
-}
-
-localStorage.setItem("fav",JSON.stringify(fav))
-load()
-}
-
-card.innerHTML=`
-<div class="icon">${s.icon||"🌐"}</div>
-<div class="name">${s.name}</div>
-`
-
-card.appendChild(star)
-
-grid.appendChild(card)
-
-})
+renderTabs()
+renderSites()
 
 }
 
-function renderTabs(cats){
+function renderTabs(){
 
-let tabs=document.getElementById("tabs")
 tabs.innerHTML=""
 
-cats.forEach(c=>{
+DATA.categories.forEach(c=>{
 
 let t=document.createElement("div")
 t.className="tab"+(c==currentCategory?" active":"")
-
 t.innerText=c
 
 t.onclick=()=>{
 currentCategory=c
-load()
+renderSites()
+renderTabs()
 }
 
 tabs.appendChild(t)
@@ -272,14 +168,37 @@ tabs.appendChild(t)
 
 }
 
-document.getElementById("searchBtn").onclick=search
-document.getElementById("search").onkeyup=e=>{
-if(e.key==="Enter")search()
+function renderSites(){
+
+grid.innerHTML=""
+
+DATA.sites.forEach(s=>{
+
+if(currentCategory!="전체" && s.category!=currentCategory) return
+
+let card=document.createElement("div")
+card.className="card"
+card.onclick=()=>window.open(s.url)
+
+card.innerHTML=`
+<div class="icon">${s.icon}</div>
+<div class="name">${s.name}</div>
+`
+
+grid.appendChild(card)
+
+})
+
 }
 
-function search(){
+searchBtn.onclick=doSearch
+search.onkeyup=e=>{
+if(e.key==="Enter")doSearch()
+}
 
-let q=document.getElementById("search").value.toLowerCase()
+function doSearch(){
+
+let q=search.value.toLowerCase()
 
 document.querySelectorAll(".card").forEach(c=>{
 c.style.display=c.innerText.toLowerCase().includes(q)?"":"none"
@@ -287,7 +206,7 @@ c.style.display=c.innerText.toLowerCase().includes(q)?"":"none"
 
 }
 
-load()
+loadData()
 
 </script>
 
