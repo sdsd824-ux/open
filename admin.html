@@ -4,6 +4,57 @@
 <meta charset="UTF-8">
 <title>관리자</title>
 
+<style>
+
+body{
+font-family:Arial;
+background:#f5f6fa;
+padding:40px;
+}
+
+input,select{
+padding:10px;
+margin:5px 0;
+width:260px;
+}
+
+button{
+padding:8px 14px;
+margin-left:5px;
+cursor:pointer;
+}
+
+.row{
+background:white;
+padding:12px;
+margin-top:10px;
+border-radius:8px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+}
+
+.icons span{
+font-size:26px;
+margin-right:10px;
+cursor:pointer;
+padding:4px;
+border-radius:6px;
+}
+
+.icons span.active{
+background:#2f80ed;
+color:white;
+}
+
+.editing{
+color:#e67e22;
+font-weight:bold;
+margin-left:10px;
+}
+
+</style>
+
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -22,56 +73,168 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 window.db=db
-window.col=collection
+window.fb={collection,addDoc,getDocs,deleteDoc,doc,updateDoc}
 
 </script>
 
-<style>
-body{font-family:Arial;background:#f5f6fa;padding:40px;}
-input,select{padding:10px;margin:5px 0;width:260px;}
-button{padding:8px 14px;margin-left:5px;cursor:pointer;}
-.row{background:white;padding:12px;margin-top:10px;border-radius:8px;display:flex;justify-content:space-between;}
-</style>
 </head>
 
 <body>
 
-<h2>사이트 추가</h2>
+<div id="loginBox">
+<h2>관리자 로그인</h2>
+<input type="password" id="pw">
+<button onclick="login()">접속</button>
+</div>
 
-<input id="name" placeholder="이름"><br>
-<input id="url" placeholder="URL"><br>
-<input id="icon" placeholder="아이콘 예: 🌐"><br>
-<input id="cat" placeholder="카테고리"><br>
+<div id="adminBox" style="display:none">
+
+<h2>
+사이트 추가 / 수정
+<span id="editingText"></span>
+</h2>
+
+<input id="siteName" placeholder="사이트 이름"><br>
+<input id="siteUrl" placeholder="URL"><br>
+
+<select id="category"></select>
+
+<div class="icons" id="icons"></div>
+
+<br>
 
 <button onclick="save()">저장</button>
+<button onclick="cancelEdit()">취소</button>
 
-<h2>목록</h2>
+<h2>카테고리 관리</h2>
+
+<input id="newCat" placeholder="카테고리 이름">
+<button onclick="addCat()">추가</button>
+
+<div id="catList"></div>
+
+<h2>사이트 목록</h2>
+
 <div id="list"></div>
+
+</div>
 
 <script type="module">
 
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+const PASSWORD="wlstjfrladbstlr"
 
-const db = window.db
+let picked="🌐"
+let editIndex=null
 
-async function save(){
+const iconList=["🌐","📊","🏥","📁","⭐","💬","📅","🧾"]
 
-await addDoc(collection(db,"sites"),{
-name:name.value,
-url:url.value,
-icon:icon.value,
-category:cat.value
-})
+async function login(){
 
-location.reload()
+if(pw.value===PASSWORD){
+
+loginBox.style.display="none"
+adminBox.style.display="block"
+
+init()
+
+}else{
+alert("비밀번호 틀림")
+}
 
 }
 
-window.save=save
+window.login=login
 
-async function load(){
+async function init(){
 
-let snap=await getDocs(collection(db,"sites"))
+renderIcons()
+
+let snap=await fb.getDocs(fb.collection(db,"cats"))
+let cats=["전체"]
+snap.forEach(d=>cats.push(d.data().name))
+
+updateCatSelect(cats)
+renderCatList(cats)
+
+loadSites()
+
+}
+
+function renderIcons(){
+
+icons.innerHTML=""
+
+iconList.forEach(i=>{
+
+let s=document.createElement("span")
+s.innerText=i
+
+if(i===picked) s.classList.add("active")
+
+s.onclick=()=>{
+picked=i
+renderIcons()
+}
+
+icons.appendChild(s)
+
+})
+
+}
+
+async function save(){
+
+if(siteName.value.trim()=="" || siteUrl.value.trim()==""){
+alert("이름 / URL 입력")
+return
+}
+
+let site={
+name:siteName.value,
+url:siteUrl.value,
+icon:picked,
+category:category.value
+}
+
+if(editIndex===null){
+
+await fb.addDoc(fb.collection(db,"sites"),site)
+
+}else{
+
+await fb.updateDoc(fb.doc(db,"sites",editIndex),site)
+
+}
+
+clearForm()
+loadSites()
+
+}
+
+function clearForm(){
+
+siteName.value=""
+siteUrl.value=""
+
+picked="🌐"
+
+editIndex=null
+
+editingText.innerText=""
+
+renderIcons()
+
+}
+
+function cancelEdit(){
+clearForm()
+}
+
+async function loadSites(){
+
+let snap=await fb.getDocs(fb.collection(db,"sites"))
+
+list.innerHTML=""
 
 snap.forEach(d=>{
 
@@ -81,8 +244,11 @@ let div=document.createElement("div")
 div.className="row"
 
 div.innerHTML=`
-<div>${s.icon} ${s.name}</div>
+<div>${s.icon} ${s.name} (${s.category})</div>
+<div>
+<button onclick="edit('${d.id}','${s.name}','${s.url}','${s.icon}','${s.category}')">수정</button>
 <button onclick="del('${d.id}')">삭제</button>
+</div>
 `
 
 list.appendChild(div)
@@ -91,16 +257,89 @@ list.appendChild(div)
 
 }
 
+function edit(id,name,url,icon,cat){
+
+siteName.value=name
+siteUrl.value=url
+category.value=cat
+
+picked=icon
+
+editIndex=id
+
+editingText.innerHTML='<span class="editing">(수정 중)</span>'
+
+renderIcons()
+
+window.scrollTo({top:0,behavior:"smooth"})
+
+}
+
+window.edit=edit
+
 async function del(id){
 
-await deleteDoc(doc(db,"sites",id))
-location.reload()
+await fb.deleteDoc(fb.doc(db,"sites",id))
+
+loadSites()
 
 }
 
 window.del=del
 
-load()
+async function addCat(){
+
+let name=newCat.value.trim()
+
+if(name==""){
+alert("이름 입력")
+return
+}
+
+await fb.addDoc(fb.collection(db,"cats"),{name})
+
+newCat.value=""
+
+init()
+
+}
+
+window.addCat=addCat
+
+function renderCatList(cats){
+
+catList.innerHTML=""
+
+cats.forEach((c,i)=>{
+
+if(c==="전체") return
+
+let d=document.createElement("div")
+d.className="row"
+
+d.innerHTML=`
+<div>${c}</div>
+`
+
+catList.appendChild(d)
+
+})
+
+}
+
+function updateCatSelect(cats){
+
+category.innerHTML=""
+
+cats.forEach(c=>{
+
+let o=document.createElement("option")
+o.text=c
+category.add(o)
+
+})
+
+}
 
 </script>
 
