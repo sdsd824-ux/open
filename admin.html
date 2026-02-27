@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>관리자</title>
 
 <style>
@@ -51,6 +52,34 @@ color:white;
 color:#e67e22;
 font-weight:bold;
 margin-left:10px;
+}
+
+/* 모바일 */
+
+@media (max-width:700px){
+
+body{
+padding:18px;
+}
+
+input,select{
+width:100%;
+}
+
+button{
+margin-top:6px;
+}
+
+.row{
+flex-direction:column;
+align-items:flex-start;
+gap:10px;
+}
+
+.icons span{
+font-size:24px;
+}
+
 }
 
 </style>
