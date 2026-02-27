@@ -2,6 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>WORK STATION</title>
 
 <style>
@@ -23,6 +24,7 @@ margin-bottom:35px;
 .logo{
 width:300px;
 margin-bottom:50px;
+max-width:90%;
 }
 
 .title{
@@ -119,33 +121,70 @@ font-size:20px;
 cursor:pointer;
 }
 
+/* 모바일 */
+
+@media (max-width:700px){
+
+body{
+padding:18px;
+}
+
+.logo{
+width:200px;
+margin-bottom:25px;
+}
+
+.title{
+font-size:28px;
+}
+
+.top{
+flex-direction:column;
+}
+
+#search{
+width:100%;
+}
+
+#searchBtn{
+width:100%;
+}
+
+.grid{
+grid-template-columns:1fr 1fr;
+gap:14px;
+}
+
+.card{
+padding:16px;
+}
+
+.name{
+font-size:15px;
+}
+
+.icon{
+font-size:26px;
+}
+
+}
+
 </style>
 </head>
 
 <body>
 
-<!-- 헤더 -->
-
 <div class="header">
-
 <img src="logo.png" class="logo">
-
 <div class="title">WORK STATION</div>
-
 </div>
-
-<!-- 검색 -->
 
 <div class="top">
 <input id="search" placeholder="사이트 검색">
 <button id="searchBtn">검색</button>
 </div>
 
-<!-- 카테고리 -->
-
 <div class="tabs" id="tabs"></div>
-
-<!-- 카드 -->
 
 <div class="grid" id="grid"></div>
 
