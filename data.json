@@ -1,0 +1,11 @@
+{
+  "categories": ["전체","업무","병원","자료"],
+  "sites": [
+    {
+      "name": "Google",
+      "url": "https://google.com",
+      "icon": "🌐",
+      "category": "업무"
+    }
+  ]
+}
