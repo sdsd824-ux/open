@@ -54,8 +54,6 @@ font-weight:bold;
 margin-left:10px;
 }
 
-/* 모바일 */
-
 @media (max-width:700px){
 
 body{
@@ -132,7 +130,7 @@ const PASSWORD="wlstjfrladbstlr"
 /* 여기만 수정 */
 
 const token="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"
-const repo="sdsd824-ux/repo"
+const repo="sdsd824-ux/open"
 
 /* -------- */
 
@@ -160,10 +158,11 @@ async function init(){
 
 renderIcons()
 
-let cats=await loadCats()
+let res=await fetch("data.json")
+let json=await res.json()
 
-updateCatSelect(cats)
-renderCatList(cats)
+updateCatSelect(json.categories)
+renderCatList(json.categories)
 loadSites()
 
 }
@@ -197,7 +196,8 @@ alert("이름 / URL 입력")
 return
 }
 
-let data=JSON.parse(localStorage.getItem("sites")||"[]")
+let res=await fetch("data.json")
+let json=await res.json()
 
 let site={
 name:siteName.value,
@@ -207,14 +207,12 @@ category:category.value
 }
 
 if(editIndex===null){
-data.push(site)
+json.sites.push(site)
 }else{
-data[editIndex]=site
+json.sites[editIndex]=site
 }
 
-localStorage.setItem("sites",JSON.stringify(data))
-
-await uploadToGitHub("sites.json",data)
+await uploadToGitHub("data.json",json)
 
 clearForm()
 loadSites()
@@ -237,13 +235,14 @@ function cancelEdit(){
 clearForm()
 }
 
-function loadSites(){
+async function loadSites(){
 
-let data=JSON.parse(localStorage.getItem("sites")||"[]")
+let res=await fetch("data.json")
+let json=await res.json()
 
 list.innerHTML=""
 
-data.forEach((s,i)=>{
+json.sites.forEach((s,i)=>{
 
 let d=document.createElement("div")
 d.className="row"
@@ -264,15 +263,17 @@ list.appendChild(d)
 
 function edit(i){
 
-let data=JSON.parse(localStorage.getItem("sites")||"[]")
-let s=data[i]
+fetch("data.json")
+.then(r=>r.json())
+.then(json=>{
+
+let s=json.sites[i]
 
 siteName.value=s.name
 siteUrl.value=s.url
 category.value=s.category
 
 picked=s.icon
-
 editIndex=i
 
 editingText.innerHTML='<span class="editing">(수정 중)</span>'
@@ -281,17 +282,18 @@ renderIcons()
 
 window.scrollTo({top:0,behavior:"smooth"})
 
+})
+
 }
 
 async function del(i){
 
-let data=JSON.parse(localStorage.getItem("sites")||"[]")
+let res=await fetch("data.json")
+let json=await res.json()
 
-data.splice(i,1)
+json.sites.splice(i,1)
 
-localStorage.setItem("sites",JSON.stringify(data))
-
-await uploadToGitHub("sites.json",data)
+await uploadToGitHub("data.json",json)
 
 loadSites()
 
@@ -299,23 +301,21 @@ loadSites()
 
 async function addCat(){
 
-let cats=JSON.parse(localStorage.getItem("cats")||'["전체"]')
+let res=await fetch("data.json")
+let json=await res.json()
 
 let name=newCat.value.trim()
 
-if(name=="" || cats.includes(name)){
+if(name=="" || json.categories.includes(name)){
 alert("이미 존재하거나 빈 이름")
 return
 }
 
-cats.push(name)
+json.categories.push(name)
 
-localStorage.setItem("cats",JSON.stringify(cats))
-
-await uploadToGitHub("cats.json",cats)
+await uploadToGitHub("data.json",json)
 
 newCat.value=""
-
 init()
 
 }
@@ -344,13 +344,12 @@ catList.appendChild(d)
 
 async function delCat(i){
 
-let cats=JSON.parse(localStorage.getItem("cats")||'["전체"]')
+let res=await fetch("data.json")
+let json=await res.json()
 
-cats.splice(i,1)
+json.categories.splice(i,1)
 
-localStorage.setItem("cats",JSON.stringify(cats))
-
-await uploadToGitHub("cats.json",cats)
+await uploadToGitHub("data.json",json)
 
 init()
 
@@ -369,8 +368,6 @@ category.add(o)
 })
 
 }
-
-/* GitHub 업로드 */
 
 async function uploadToGitHub(filename,data){
 
@@ -397,19 +394,6 @@ content:btoa(unescape(encodeURIComponent(JSON.stringify(data,null,2)))),
 sha:sha
 })
 })
-
-}
-
-async function loadCats(){
-
-try{
-let res=await fetch("cats.json")
-let data=await res.json()
-localStorage.setItem("cats",JSON.stringify(data))
-return data
-}catch{
-return JSON.parse(localStorage.getItem("cats")||'["전체"]')
-}
 
 }
 
