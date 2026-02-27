@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -5,7 +6,6 @@
 <title>관리자</title>
 
 <style>
-
 body{
 font-family:Arial;
 background:#f5f6fa;
@@ -52,13 +52,20 @@ color:#e67e22;
 font-weight:bold;
 margin-left:10px;
 }
-
 </style>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+getFirestore,
+collection,
+addDoc,
+deleteDoc,
+doc,
+updateDoc,
+onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBzUQt0DydA7W3s7qzYjis6UUFA1b4RjqA",
@@ -73,7 +80,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 window.db=db
-window.fb={collection,addDoc,getDocs,deleteDoc,doc,updateDoc}
+window.fb={collection,addDoc,deleteDoc,doc,updateDoc,onSnapshot}
 
 </script>
 
@@ -125,39 +132,25 @@ const PASSWORD="wlstjfrladbstlr"
 
 let picked="🌐"
 let editIndex=null
+let catsCache=[]
 
 const iconList=["🌐","📊","🏥","📁","⭐","💬","📅","🧾"]
 
-async function login(){
-
+function login(){
 if(pw.value===PASSWORD){
-
 loginBox.style.display="none"
 adminBox.style.display="block"
-
 init()
-
 }else{
 alert("비밀번호 틀림")
 }
-
 }
-
 window.login=login
 
-async function init(){
-
+function init(){
 renderIcons()
-
-let snap=await fb.getDocs(fb.collection(db,"cats"))
-let cats=["전체"]
-snap.forEach(d=>cats.push(d.data().name))
-
-updateCatSelect(cats)
-renderCatList(cats)
-
-loadSites()
-
+watchCats()
+watchSites()
 }
 
 function renderIcons(){
@@ -179,7 +172,6 @@ renderIcons()
 icons.appendChild(s)
 
 })
-
 }
 
 async function save(){
@@ -207,21 +199,15 @@ await fb.updateDoc(fb.doc(db,"sites",editIndex),site)
 }
 
 clearForm()
-loadSites()
-
 }
 
 function clearForm(){
 
 siteName.value=""
 siteUrl.value=""
-
 picked="🌐"
-
 editIndex=null
-
 editingText.innerText=""
-
 renderIcons()
 
 }
@@ -230,9 +216,12 @@ function cancelEdit(){
 clearForm()
 }
 
-async function loadSites(){
+window.cancelEdit=cancelEdit
+window.save=save
 
-let snap=await fb.getDocs(fb.collection(db,"sites"))
+function watchSites(){
+
+fb.onSnapshot(fb.collection(db,"sites"),snap=>{
 
 list.innerHTML=""
 
@@ -255,6 +244,8 @@ list.appendChild(div)
 
 })
 
+})
+
 }
 
 function edit(id,name,url,icon,cat){
@@ -262,9 +253,7 @@ function edit(id,name,url,icon,cat){
 siteName.value=name
 siteUrl.value=url
 category.value=cat
-
 picked=icon
-
 editIndex=id
 
 editingText.innerHTML='<span class="editing">(수정 중)</span>'
@@ -274,25 +263,19 @@ renderIcons()
 window.scrollTo({top:0,behavior:"smooth"})
 
 }
-
 window.edit=edit
 
 async function del(id){
-
 await fb.deleteDoc(fb.doc(db,"sites",id))
-
-loadSites()
-
 }
-
 window.del=del
 
 async function addCat(){
 
 let name=newCat.value.trim()
 
-if(name==""){
-alert("이름 입력")
+if(name=="" || catsCache.includes(name)){
+alert("이미 존재하거나 빈 이름")
 return
 }
 
@@ -300,17 +283,33 @@ await fb.addDoc(fb.collection(db,"cats"),{name})
 
 newCat.value=""
 
-init()
+}
+window.addCat=addCat
+
+function watchCats(){
+
+fb.onSnapshot(fb.collection(db,"cats"),snap=>{
+
+let cats=["전체"]
+catsCache=[]
+
+snap.forEach(d=>{
+cats.push(d.data().name)
+catsCache.push(d.data().name)
+})
+
+updateCatSelect(cats)
+renderCatList(cats)
+
+})
 
 }
-
-window.addCat=addCat
 
 function renderCatList(cats){
 
 catList.innerHTML=""
 
-cats.forEach((c,i)=>{
+cats.forEach(c=>{
 
 if(c==="전체") return
 
@@ -319,6 +318,7 @@ d.className="row"
 
 d.innerHTML=`
 <div>${c}</div>
+<button onclick="delCat('${c}')">삭제</button>
 `
 
 catList.appendChild(d)
@@ -326,6 +326,19 @@ catList.appendChild(d)
 })
 
 }
+
+async function delCat(name){
+
+fb.onSnapshot(fb.collection(db,"cats"),snap=>{
+snap.forEach(async d=>{
+if(d.data().name===name){
+await fb.deleteDoc(fb.doc(db,"cats",d.id))
+}
+})
+})
+
+}
+window.delCat=delCat
 
 function updateCatSelect(cats){
 
@@ -345,3 +358,4 @@ category.add(o)
 
 </body>
 </html>
+```
