@@ -7,16 +7,22 @@
 
 <style>
 
+*{
+box-sizing:border-box;
+}
+
 body{
 font-family:Arial;
 background:#f5f6fa;
 padding:40px;
+margin:0;
 }
 
 input,select{
 padding:10px;
 margin:5px 0;
 width:260px;
+max-width:100%;
 }
 
 button{
@@ -33,14 +39,23 @@ border-radius:8px;
 display:flex;
 justify-content:space-between;
 align-items:center;
+flex-wrap:wrap;
+gap:10px;
+}
+
+.icons{
+display:flex;
+flex-wrap:wrap;
+gap:6px;
+margin-top:8px;
 }
 
 .icons span{
 font-size:26px;
-margin-right:10px;
 cursor:pointer;
-padding:4px;
+padding:6px 8px;
 border-radius:6px;
+background:#eee;
 }
 
 .icons span.active{
@@ -59,25 +74,21 @@ margin-left:10px;
 @media (max-width:700px){
 
 body{
-padding:18px;
+padding:16px;
 }
 
-input,select{
-width:100%;
+h2{
+font-size:20px;
 }
 
 button{
+margin-left:0;
 margin-top:6px;
 }
 
 .row{
 flex-direction:column;
 align-items:flex-start;
-gap:10px;
-}
-
-.icons span{
-font-size:24px;
 }
 
 }
@@ -183,7 +194,39 @@ icons.appendChild(s)
 
 }
 
-function save(){
+async function saveJSON(filename,data){
+
+const token="깃허브토큰"
+const repo="깃허브아이디/레포이름"
+
+const url=`https://api.github.com/repos/${repo}/contents/${filename}`
+
+let sha=null
+
+try{
+let res=await fetch(url)
+if(res.ok){
+let j=await res.json()
+sha=j.sha
+}
+}catch{}
+
+await fetch(url,{
+method:"PUT",
+headers:{
+Authorization:`token ${token}`,
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+message:"update",
+content:btoa(unescape(encodeURIComponent(JSON.stringify(data,null,2)))),
+sha:sha
+})
+})
+
+}
+
+async function save(){
 
 if(siteName.value.trim()=="" || siteUrl.value.trim()==""){
 alert("이름 / URL 입력")
@@ -206,6 +249,8 @@ data[editIndex]=site
 }
 
 localStorage.setItem("sites",JSON.stringify(data))
+
+await saveJSON("sites.json",data)
 
 clearForm()
 loadSites()
@@ -274,7 +319,7 @@ window.scrollTo({top:0,behavior:"smooth"})
 
 }
 
-function del(i){
+async function del(i){
 
 let data=JSON.parse(localStorage.getItem("sites")||"[]")
 
@@ -282,11 +327,13 @@ data.splice(i,1)
 
 localStorage.setItem("sites",JSON.stringify(data))
 
+await saveJSON("sites.json",data)
+
 loadSites()
 
 }
 
-function addCat(){
+async function addCat(){
 
 let cats=JSON.parse(localStorage.getItem("cats")||'["전체"]')
 
@@ -300,6 +347,8 @@ return
 cats.push(name)
 
 localStorage.setItem("cats",JSON.stringify(cats))
+
+await saveJSON("cats.json",cats)
 
 newCat.value=""
 
@@ -329,13 +378,15 @@ catList.appendChild(d)
 
 }
 
-function delCat(i){
+async function delCat(i){
 
 let cats=JSON.parse(localStorage.getItem("cats")||'["전체"]')
 
 cats.splice(i,1)
 
 localStorage.setItem("cats",JSON.stringify(cats))
+
+await saveJSON("cats.json",cats)
 
 init()
 
