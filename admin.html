@@ -102,12 +102,12 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBzUQt0DydA7W3s7qzYjis6UUFA1b4RjqA",
-  authDomain: "open-7d88e.firebaseapp.com",
-  projectId: "open-7d88e",
-  storageBucket: "open-7d88e.firebasestorage.app",
-  messagingSenderId: "359782434518",
-  appId: "1:359782434518:web:22ba4a6bfcb5b21a446b77"
+apiKey: "AIzaSyBzlQtODydA7W3s7qzYjis6UUFA1b4RjqA",
+authDomain: "open-7d88e.firebaseapp.com",
+projectId: "open-7d88e",
+storageBucket: "open-7d88e.firebasestorage.app",
+messagingSenderId: "359782434518",
+appId: "1:359782434518:web:22ba4a6bfc5b21a446b77"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -139,11 +139,10 @@ async function init(){
 
 renderIcons()
 
-let cats=[]
-let snap=await getDocs(collection(db,"cats"))
-snap.forEach(d=>cats.push(d.data().name))
+let cats=["전체"]
 
-if(!cats.includes("전체")) cats.unshift("전체")
+const snap = await getDocs(collection(db,"cats"))
+snap.forEach(d=>cats.push(d.data().name))
 
 updateCatSelect(cats)
 renderCatList(cats)
@@ -187,7 +186,7 @@ icon:picked,
 category:category.value
 }
 
-if(editId==null){
+if(editId===null){
 await addDoc(collection(db,"sites"),site)
 }else{
 await updateDoc(doc(db,"sites",editId),site)
@@ -219,7 +218,7 @@ clearForm()
 
 async function loadSites(){
 
-let snap=await getDocs(collection(db,"sites"))
+const snap = await getDocs(collection(db,"sites"))
 
 list.innerHTML=""
 
@@ -246,9 +245,11 @@ list.appendChild(div)
 
 window.edit=async function(id){
 
-let snap=await getDocs(collection(db,"sites"))
+const snap = await getDocs(collection(db,"sites"))
+
 snap.forEach(d=>{
 if(d.id===id){
+
 let s=d.data()
 
 siteName.value=s.name
@@ -279,6 +280,7 @@ loadSites()
 window.addCat=async function(){
 
 let name=newCat.value.trim()
+
 if(name=="") return
 
 await addDoc(collection(db,"cats"),{name})
@@ -288,11 +290,28 @@ init()
 
 }
 
+window.delCat=async function(i){
+
+const snap = await getDocs(collection(db,"cats"))
+
+let arr=[]
+snap.forEach(d=>arr.push({id:d.id,...d.data()}))
+
+let target=arr[i]
+
+if(!target) return
+
+await deleteDoc(doc(db,"cats",target.id))
+
+init()
+
+}
+
 function renderCatList(cats){
 
 catList.innerHTML=""
 
-cats.forEach(c=>{
+cats.forEach((c,i)=>{
 
 if(c==="전체") return
 
@@ -301,6 +320,7 @@ d.className="row"
 
 d.innerHTML=`
 <div>${c}</div>
+<button onclick="delCat(${i})">삭제</button>
 `
 
 catList.appendChild(d)
