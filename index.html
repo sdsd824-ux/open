@@ -13,7 +13,7 @@ body{
 font-family:Arial;
 background:#f5f6fa;
 margin:0;
-padding:40px;
+padding:30px;
 }
 
 .header{
@@ -22,14 +22,13 @@ margin-bottom:30px;
 }
 
 .logo{
-width:260px;
+width:220px;
 max-width:90%;
 }
 
 .title{
-font-size:36px;
+font-size:34px;
 font-weight:800;
-margin-top:10px;
 }
 
 .top{
@@ -41,7 +40,6 @@ margin:20px 0;
 #search{
 flex:1;
 padding:12px;
-font-size:16px;
 border-radius:8px;
 border:1px solid #ccc;
 }
@@ -52,7 +50,6 @@ border:none;
 background:#2f80ed;
 color:white;
 border-radius:8px;
-cursor:pointer;
 }
 
 .tabs{
@@ -64,7 +61,7 @@ margin-bottom:20px;
 
 .tab{
 background:#e4e6eb;
-padding:8px 12px;
+padding:8px 14px;
 border-radius:8px;
 cursor:pointer;
 }
@@ -82,11 +79,10 @@ gap:16px;
 
 .card{
 background:white;
-padding:20px;
+padding:18px;
 border-radius:12px;
 box-shadow:0 3px 10px rgba(0,0,0,0.08);
 cursor:pointer;
-position:relative;
 }
 
 .icon{
@@ -94,13 +90,13 @@ font-size:30px;
 }
 
 .name{
-margin-top:8px;
+margin-top:6px;
 font-weight:bold;
 }
 
 @media (max-width:700px){
 
-body{padding:16px;}
+body{padding:15px;}
 
 .top{
 flex-direction:column;
@@ -123,20 +119,19 @@ grid-template-columns:1fr 1fr;
 </div>
 
 <div class="top">
-<input id="search" placeholder="사이트 검색">
+<input id="search" placeholder="검색">
 <button id="searchBtn">검색</button>
 </div>
 
 <div class="tabs" id="tabs"></div>
-
 <div class="grid" id="grid"></div>
 
 <script>
 
-let DATA=null
+let DATA
 let currentCategory="전체"
 
-async function loadData(){
+async function load(){
 
 let res=await fetch("data.json")
 DATA=await res.json()
@@ -154,12 +149,13 @@ DATA.categories.forEach(c=>{
 
 let t=document.createElement("div")
 t.className="tab"+(c==currentCategory?" active":"")
+
 t.innerText=c
 
 t.onclick=()=>{
 currentCategory=c
-renderSites()
 renderTabs()
+renderSites()
 }
 
 tabs.appendChild(t)
@@ -176,27 +172,23 @@ DATA.sites.forEach(s=>{
 
 if(currentCategory!="전체" && s.category!=currentCategory) return
 
-let card=document.createElement("div")
-card.className="card"
-card.onclick=()=>window.open(s.url)
+let d=document.createElement("div")
+d.className="card"
 
-card.innerHTML=`
+d.onclick=()=>window.open(s.url)
+
+d.innerHTML=`
 <div class="icon">${s.icon}</div>
 <div class="name">${s.name}</div>
 `
 
-grid.appendChild(card)
+grid.appendChild(d)
 
 })
 
 }
 
-searchBtn.onclick=doSearch
-search.onkeyup=e=>{
-if(e.key==="Enter")doSearch()
-}
-
-function doSearch(){
+searchBtn.onclick=()=>{
 
 let q=search.value.toLowerCase()
 
@@ -206,7 +198,7 @@ c.style.display=c.innerText.toLowerCase().includes(q)?"":"none"
 
 }
 
-loadData()
+load()
 
 </script>
 
