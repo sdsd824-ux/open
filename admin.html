@@ -4,330 +4,104 @@
 <meta charset="UTF-8">
 <title>관리자</title>
 
+<script type="module">
+
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+const firebaseConfig = {
+  apiKey: "AIzaSyBzUQt0DydA7W3s7qzYjis6UUFA1b4RjqA",
+  authDomain: "open-7d88e.firebaseapp.com",
+  projectId: "open-7d88e",
+  storageBucket: "open-7d88e.firebasestorage.app",
+  messagingSenderId: "359782434518",
+  appId: "1:359782434518:web:22ba4a6bfcb5b21a446b77"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+window.db=db
+window.col=collection
+
+</script>
+
 <style>
-
-body{
-font-family:Arial;
-background:#f5f6fa;
-padding:40px;
-}
-
-input,select{
-padding:10px;
-margin:5px 0;
-width:260px;
-}
-
-button{
-padding:8px 14px;
-margin-left:5px;
-cursor:pointer;
-}
-
-.row{
-background:white;
-padding:12px;
-margin-top:10px;
-border-radius:8px;
-display:flex;
-justify-content:space-between;
-align-items:center;
-}
-
-.icons span{
-font-size:26px;
-margin-right:10px;
-cursor:pointer;
-padding:4px;
-border-radius:6px;
-}
-
-.icons span.active{
-background:#2f80ed;
-color:white;
-}
-
-.editing{
-color:#e67e22;
-font-weight:bold;
-margin-left:10px;
-}
-
+body{font-family:Arial;background:#f5f6fa;padding:40px;}
+input,select{padding:10px;margin:5px 0;width:260px;}
+button{padding:8px 14px;margin-left:5px;cursor:pointer;}
+.row{background:white;padding:12px;margin-top:10px;border-radius:8px;display:flex;justify-content:space-between;}
 </style>
 </head>
 
 <body>
 
-<div id="loginBox">
-<h2>관리자 로그인</h2>
-<input type="password" id="pw">
-<button onclick="login()">접속</button>
-</div>
+<h2>사이트 추가</h2>
 
-<div id="adminBox" style="display:none">
-
-<h2>
-사이트 추가 / 수정
-<span id="editingText"></span>
-</h2>
-
-<input id="siteName" placeholder="사이트 이름"><br>
-<input id="siteUrl" placeholder="URL"><br>
-
-<select id="category"></select>
-
-<div class="icons" id="icons"></div>
-
-<br>
+<input id="name" placeholder="이름"><br>
+<input id="url" placeholder="URL"><br>
+<input id="icon" placeholder="아이콘 예: 🌐"><br>
+<input id="cat" placeholder="카테고리"><br>
 
 <button onclick="save()">저장</button>
-<button onclick="cancelEdit()">취소</button>
 
-<h2>카테고리 관리</h2>
-
-<input id="newCat" placeholder="카테고리 이름">
-<button onclick="addCat()">추가</button>
-
-<div id="catList"></div>
-
-<h2>사이트 목록</h2>
-
+<h2>목록</h2>
 <div id="list"></div>
 
-</div>
+<script type="module">
 
-<script>
+import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-const PASSWORD="wlstjfrladbstlr"
+const db = window.db
 
-let picked="🌐"
-let editIndex=null
+async function save(){
 
-const iconList=["🌐","📊","🏥","📁","⭐","💬","📅","🧾"]
-
-function login(){
-
-if(pw.value===PASSWORD){
-
-loginBox.style.display="none"
-adminBox.style.display="block"
-
-init()
-
-}else{
-alert("비밀번호 틀림")
-}
-
-}
-
-function init(){
-
-renderIcons()
-
-let cats=JSON.parse(localStorage.getItem("cats")||'["전체"]')
-
-updateCatSelect(cats)
-renderCatList(cats)
-loadSites()
-
-}
-
-function renderIcons(){
-
-icons.innerHTML=""
-
-iconList.forEach(i=>{
-
-let s=document.createElement("span")
-s.innerText=i
-
-if(i===picked) s.classList.add("active")
-
-s.onclick=()=>{
-picked=i
-renderIcons()
-}
-
-icons.appendChild(s)
-
+await addDoc(collection(db,"sites"),{
+name:name.value,
+url:url.value,
+icon:icon.value,
+category:cat.value
 })
 
-}
-
-function save(){
-
-if(siteName.value.trim()=="" || siteUrl.value.trim()==""){
-alert("이름 / URL 입력")
-return
-}
-
-let data=JSON.parse(localStorage.getItem("sites")||"[]")
-
-let site={
-name:siteName.value,
-url:siteUrl.value,
-icon:picked,
-category:category.value
-}
-
-if(editIndex===null){
-data.push(site)
-}else{
-data[editIndex]=site
-}
-
-localStorage.setItem("sites",JSON.stringify(data))
-
-clearForm()
-loadSites()
+location.reload()
 
 }
 
-function clearForm(){
+window.save=save
 
-siteName.value=""
-siteUrl.value=""
+async function load(){
 
-picked="🌐"
+let snap=await getDocs(collection(db,"sites"))
 
-editIndex=null
+snap.forEach(d=>{
 
-editingText.innerText=""
+let s=d.data()
 
-renderIcons()
+let div=document.createElement("div")
+div.className="row"
 
-}
-
-function cancelEdit(){
-clearForm()
-}
-
-function loadSites(){
-
-let data=JSON.parse(localStorage.getItem("sites")||"[]")
-
-list.innerHTML=""
-
-data.forEach((s,i)=>{
-
-let d=document.createElement("div")
-d.className="row"
-
-d.innerHTML=`
-<div>${s.icon} ${s.name} (${s.category})</div>
-<div>
-<button onclick="edit(${i})">수정</button>
-<button onclick="del(${i})">삭제</button>
-</div>
+div.innerHTML=`
+<div>${s.icon} ${s.name}</div>
+<button onclick="del('${d.id}')">삭제</button>
 `
 
-list.appendChild(d)
+list.appendChild(div)
 
 })
 
 }
 
-function edit(i){
+async function del(id){
 
-let data=JSON.parse(localStorage.getItem("sites")||"[]")
-let s=data[i]
-
-siteName.value=s.name
-siteUrl.value=s.url
-category.value=s.category
-
-picked=s.icon
-
-editIndex=i
-
-editingText.innerHTML='<span class="editing">(수정 중)</span>'
-
-renderIcons()
-
-window.scrollTo({top:0,behavior:"smooth"})
+await deleteDoc(doc(db,"sites",id))
+location.reload()
 
 }
 
-function del(i){
+window.del=del
 
-let data=JSON.parse(localStorage.getItem("sites")||"[]")
-
-data.splice(i,1)
-
-localStorage.setItem("sites",JSON.stringify(data))
-
-loadSites()
-
-}
-
-function addCat(){
-
-let cats=JSON.parse(localStorage.getItem("cats")||'["전체"]')
-
-let name=newCat.value.trim()
-
-if(name=="" || cats.includes(name)){
-alert("이미 존재하거나 빈 이름")
-return
-}
-
-cats.push(name)
-
-localStorage.setItem("cats",JSON.stringify(cats))
-
-newCat.value=""
-
-init()
-
-}
-
-function renderCatList(cats){
-
-catList.innerHTML=""
-
-cats.forEach((c,i)=>{
-
-if(c==="전체") return
-
-let d=document.createElement("div")
-d.className="row"
-
-d.innerHTML=`
-<div>${c}</div>
-<button onclick="delCat(${i})">삭제</button>
-`
-
-catList.appendChild(d)
-
-})
-
-}
-
-function delCat(i){
-
-let cats=JSON.parse(localStorage.getItem("cats")||'["전체"]')
-
-cats.splice(i,1)
-
-localStorage.setItem("cats",JSON.stringify(cats))
-
-init()
-
-}
-
-function updateCatSelect(cats){
-
-category.innerHTML=""
-
-cats.forEach(c=>{
-
-let o=document.createElement("option")
-o.text=c
-category.add(o)
-
-})
-
-}
+load()
 
 </script>
 
