@@ -5,14 +5,11 @@
 <title>관리자</title>
 
 <style>
+
 body{
 font-family:Arial;
 background:#f5f6fa;
 padding:40px;
-}
-
-h2{
-margin-top:40px;
 }
 
 input,select{
@@ -23,146 +20,308 @@ width:260px;
 
 button{
 padding:8px 14px;
-cursor:pointer;
 margin-left:5px;
+cursor:pointer;
 }
 
 .row{
 background:white;
-padding:10px;
-margin:5px 0;
+padding:12px;
+margin-top:10px;
 border-radius:8px;
 display:flex;
 justify-content:space-between;
 align-items:center;
 }
 
+.icons span{
+font-size:26px;
+margin-right:10px;
+cursor:pointer;
+padding:4px;
+border-radius:6px;
+}
+
+.icons span.active{
+background:#2f80ed;
+color:white;
+}
+
+.editing{
+color:#e67e22;
+font-weight:bold;
+margin-left:10px;
+}
+
 </style>
 </head>
+
 <body>
 
-<h1>관리자</h1>
+<div id="loginBox">
+<h2>관리자 로그인</h2>
+<input type="password" id="pw">
+<button onclick="login()">접속</button>
+</div>
 
-<h2>카테고리 추가</h2>
-<input id="catName" placeholder="카테고리 이름">
-<button onclick="addCategory()">추가</button>
+<div id="adminBox" style="display:none">
+
+<h2>
+사이트 추가 / 수정
+<span id="editingText"></span>
+</h2>
+
+<input id="siteName" placeholder="사이트 이름"><br>
+<input id="siteUrl" placeholder="URL"><br>
+
+<select id="category"></select>
+
+<div class="icons" id="icons"></div>
+
+<br>
+
+<button onclick="save()">저장</button>
+<button onclick="cancelEdit()">취소</button>
+
+<h2>카테고리 관리</h2>
+
+<input id="newCat" placeholder="카테고리 이름">
+<button onclick="addCat()">추가</button>
 
 <div id="catList"></div>
 
-<h2>카드 추가</h2>
+<h2>사이트 목록</h2>
 
-<input id="title" placeholder="이름"><br>
-<input id="url" placeholder="URL"><br>
-<input id="icon" placeholder="아이콘 (예: 📊)"><br>
+<div id="list"></div>
 
-<select id="category"></select>
-<button onclick="addCard()">생성</button>
-
-<div id="cardList"></div>
+</div>
 
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import { getFirestore, collection, getDocs, addDoc, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
-apiKey: "AIzaSyBzlQt0DyUdA7W3s7qzYjis6UUFA1b4RjqA",
-authDomain: "open-7d88e.firebaseapp.com",
-projectId: "open-7d88e",
-storageBucket: "open-7d88e.firebasestorage.app",
-messagingSenderId: "359782434518",
-appId: "1:359782434518:web:22ba4a6bfc5b21a446b77"
+  apiKey: "AIzaSyBzUQt0DydA7W3s7qzYjis6UUFA1b4RjqA",
+  authDomain: "open-7d88e.firebaseapp.com",
+  projectId: "open-7d88e",
+  storageBucket: "open-7d88e.firebasestorage.app",
+  messagingSenderId: "359782434518",
+  appId: "1:359782434518:web:22ba4a6bfcb5b21a446b77"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-window.addCategory = async function(){
+window.PASSWORD="wlstjfrladbstlr"
 
-const name=document.getElementById("catName").value;
+let picked="🌐"
+let editId=null
 
-await addDoc(collection(db,"categories"),{name});
+const iconList=["🌐","📊","🏥","📁","⭐","💬","📅","🧾"]
 
-load();
+window.login=function(){
+
+if(pw.value===PASSWORD){
+
+loginBox.style.display="none"
+adminBox.style.display="block"
+
+init()
+
+}else{
+alert("비밀번호 틀림")
+}
 
 }
 
-window.addCard = async function(){
+async function init(){
 
-const title=document.getElementById("title").value;
-const url=document.getElementById("url").value;
-const icon=document.getElementById("icon").value;
-const category=document.getElementById("category").value;
+renderIcons()
 
-await addDoc(collection(db,"cards"),{
-title,url,icon,category
-});
+let cats=[]
+let snap=await getDocs(collection(db,"cats"))
+snap.forEach(d=>cats.push(d.data().name))
 
-load();
+if(!cats.includes("전체")) cats.unshift("전체")
+
+updateCatSelect(cats)
+renderCatList(cats)
+loadSites()
 
 }
 
-async function load(){
+function renderIcons(){
 
-const catList=document.getElementById("catList");
-const catSelect=document.getElementById("category");
-const cardList=document.getElementById("cardList");
+icons.innerHTML=""
 
-catList.innerHTML="";
-catSelect.innerHTML="";
-cardList.innerHTML="";
+iconList.forEach(i=>{
 
-const catSnap=await getDocs(collection(db,"categories"));
-const cardSnap=await getDocs(collection(db,"cards"));
+let s=document.createElement("span")
+s.innerText=i
 
-const cats=[];
-catSnap.forEach(d=>cats.push({id:d.id,...d.data()}));
+if(i===picked) s.classList.add("active")
+
+s.onclick=()=>{
+picked=i
+renderIcons()
+}
+
+icons.appendChild(s)
+
+})
+
+}
+
+window.save=async function(){
+
+if(siteName.value.trim()=="" || siteUrl.value.trim()==""){
+alert("이름 / URL 입력")
+return
+}
+
+let site={
+name:siteName.value,
+url:siteUrl.value,
+icon:picked,
+category:category.value
+}
+
+if(editId==null){
+await addDoc(collection(db,"sites"),site)
+}else{
+await updateDoc(doc(db,"sites",editId),site)
+}
+
+clearForm()
+loadSites()
+
+}
+
+function clearForm(){
+
+siteName.value=""
+siteUrl.value=""
+
+picked="🌐"
+
+editId=null
+
+editingText.innerText=""
+
+renderIcons()
+
+}
+
+window.cancelEdit=function(){
+clearForm()
+}
+
+async function loadSites(){
+
+let snap=await getDocs(collection(db,"sites"))
+
+list.innerHTML=""
+
+snap.forEach(d=>{
+
+let s=d.data()
+
+let div=document.createElement("div")
+div.className="row"
+
+div.innerHTML=`
+<div>${s.icon} ${s.name} (${s.category})</div>
+<div>
+<button onclick="edit('${d.id}')">수정</button>
+<button onclick="del('${d.id}')">삭제</button>
+</div>
+`
+
+list.appendChild(div)
+
+})
+
+}
+
+window.edit=async function(id){
+
+let snap=await getDocs(collection(db,"sites"))
+snap.forEach(d=>{
+if(d.id===id){
+let s=d.data()
+
+siteName.value=s.name
+siteUrl.value=s.url
+category.value=s.category
+
+picked=s.icon
+editId=id
+
+editingText.innerHTML='<span class="editing">(수정 중)</span>'
+
+renderIcons()
+
+}
+})
+
+window.scrollTo({top:0,behavior:"smooth"})
+
+}
+
+window.del=async function(id){
+
+await deleteDoc(doc(db,"sites",id))
+loadSites()
+
+}
+
+window.addCat=async function(){
+
+let name=newCat.value.trim()
+if(name=="") return
+
+await addDoc(collection(db,"cats"),{name})
+
+newCat.value=""
+init()
+
+}
+
+function renderCatList(cats){
+
+catList.innerHTML=""
 
 cats.forEach(c=>{
 
-const row=document.createElement("div");
-row.className="row";
-row.innerHTML=`
-<div>${c.name}</div>
-<button onclick="deleteCategory('${c.id}')">삭제</button>
-`;
-catList.appendChild(row);
+if(c==="전체") return
 
-const opt=document.createElement("option");
-opt.value=c.name;
-opt.innerText=c.name;
-catSelect.appendChild(opt);
+let d=document.createElement("div")
+d.className="row"
 
-});
+d.innerHTML=`
+<div>${c}</div>
+`
 
-const cards=[];
-cardSnap.forEach(d=>cards.push({id:d.id,...d.data()}));
+catList.appendChild(d)
 
-cards.forEach(c=>{
-
-const row=document.createElement("div");
-row.className="row";
-row.innerHTML=`
-<div>${c.title} (${c.category})</div>
-<button onclick="deleteCard('${c.id}')">삭제</button>
-`;
-cardList.appendChild(row);
-
-});
+})
 
 }
 
-window.deleteCategory = async function(id){
-await deleteDoc(doc(db,"categories",id));
-load();
-}
+function updateCatSelect(cats){
 
-window.deleteCard = async function(id){
-await deleteDoc(doc(db,"cards",id));
-load();
-}
+category.innerHTML=""
 
-load();
+cats.forEach(c=>{
+
+let o=document.createElement("option")
+o.text=c
+category.add(o)
+
+})
+
+}
 
 </script>
 
