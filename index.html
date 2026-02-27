@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -7,7 +8,11 @@
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+getFirestore,
+collection,
+onSnapshot
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyBzUQt0DydA7W3s7qzYjis6UUFA1b4RjqA",
@@ -22,7 +27,7 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
 window.db=db
-window.fb={collection,getDocs}
+window.fb={collection,onSnapshot}
 
 </script>
 
@@ -125,17 +130,22 @@ font-size:18px;
 font-weight:bold;
 }
 
+.star{
+position:absolute;
+right:12px;
+top:12px;
+font-size:20px;
+cursor:pointer;
+}
+
 </style>
 </head>
 
 <body>
 
 <div class="header">
-
 <img src="logo.png" class="logo">
-
 <div class="title">WORK STATION</div>
-
 </div>
 
 <div class="top">
@@ -150,24 +160,38 @@ font-weight:bold;
 <script type="module">
 
 let currentCategory="전체"
+let allSites=[]
 
-async function load(){
+watch()
 
-let snap=await fb.getDocs(fb.collection(db,"sites"))
-let sites=[]
-snap.forEach(d=>sites.push(d.data()))
+function watch(){
+
+fb.onSnapshot(fb.collection(db,"sites"),snap=>{
+
+allSites=[]
+snap.forEach(d=>allSites.push(d.data()))
+
+render()
+
+})
+
+fb.onSnapshot(fb.collection(db,"cats"),snap=>{
 
 let cats=["전체"]
-
-let snap2=await fb.getDocs(fb.collection(db,"cats"))
-snap2.forEach(d=>cats.push(d.data().name))
+snap.forEach(d=>cats.push(d.data().name))
 
 renderTabs(cats)
+
+})
+
+}
+
+function render(){
 
 let grid=document.getElementById("grid")
 grid.innerHTML=""
 
-sites.forEach(s=>{
+allSites.forEach(s=>{
 
 if(currentCategory!="전체" && s.category!=currentCategory) return
 
@@ -176,7 +200,7 @@ card.className="card"
 
 card.onclick=()=>window.open(s.url)
 
-card.innerHTML = `
+card.innerHTML=`
 <div class="icon">${s.icon||"🌐"}</div>
 <div class="name">${s.name}</div>
 `
@@ -195,39 +219,5 @@ tabs.innerHTML=""
 cats.forEach(c=>{
 
 let t=document.createElement("div")
-t.className="tab"+(c==currentCategory?" active":"")
-
-t.innerText=c
-
-t.onclick=()=>{
-currentCategory=c
-load()
-}
-
-tabs.appendChild(t)
-
-})
-
-}
-
-document.getElementById("searchBtn").onclick=search
-document.getElementById("search").onkeyup=e=>{
-if(e.key==="Enter")search()
-}
-
-function search(){
-
-let q=search.value.toLowerCase()
-
-document.querySelectorAll(".card").forEach(c=>{
-c.style.display=c.innerText.toLowerCase().includes(q)?"block":"none"
-})
-
-}
-
-load()
-
-</script>
-
-</body>
-</html>
+t.classNa
+```
