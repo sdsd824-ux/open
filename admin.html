@@ -7,22 +7,16 @@
 
 <style>
 
-*{
-box-sizing:border-box;
-}
-
 body{
 font-family:Arial;
 background:#f5f6fa;
 padding:40px;
-margin:0;
 }
 
 input,select{
 padding:10px;
 margin:5px 0;
 width:260px;
-max-width:100%;
 }
 
 button{
@@ -39,23 +33,14 @@ border-radius:8px;
 display:flex;
 justify-content:space-between;
 align-items:center;
-flex-wrap:wrap;
-gap:10px;
-}
-
-.icons{
-display:flex;
-flex-wrap:wrap;
-gap:6px;
-margin-top:8px;
 }
 
 .icons span{
 font-size:26px;
+margin-right:10px;
 cursor:pointer;
-padding:6px 8px;
+padding:4px;
 border-radius:6px;
-background:#eee;
 }
 
 .icons span.active{
@@ -74,21 +59,25 @@ margin-left:10px;
 @media (max-width:700px){
 
 body{
-padding:16px;
+padding:18px;
 }
 
-h2{
-font-size:20px;
+input,select{
+width:100%;
 }
 
 button{
-margin-left:0;
 margin-top:6px;
 }
 
 .row{
 flex-direction:column;
 align-items:flex-start;
+gap:10px;
+}
+
+.icons span{
+font-size:24px;
 }
 
 }
@@ -140,6 +129,13 @@ align-items:flex-start;
 
 const PASSWORD="wlstjfrladbstlr"
 
+/* 여기만 수정 */
+
+const token="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"
+const repo="sdsd824-ux/repo"
+
+/* -------- */
+
 let picked="🌐"
 let editIndex=null
 
@@ -160,11 +156,11 @@ alert("비밀번호 틀림")
 
 }
 
-function init(){
+async function init(){
 
 renderIcons()
 
-let cats=JSON.parse(localStorage.getItem("cats")||'["전체"]')
+let cats=await loadCats()
 
 updateCatSelect(cats)
 renderCatList(cats)
@@ -194,38 +190,6 @@ icons.appendChild(s)
 
 }
 
-async function saveJSON(filename,data){
-
-const token="깃허브토큰"
-const repo="깃허브아이디/레포이름"
-
-const url=`https://api.github.com/repos/${repo}/contents/${filename}`
-
-let sha=null
-
-try{
-let res=await fetch(url)
-if(res.ok){
-let j=await res.json()
-sha=j.sha
-}
-}catch{}
-
-await fetch(url,{
-method:"PUT",
-headers:{
-Authorization:`token ${token}`,
-"Content-Type":"application/json"
-},
-body:JSON.stringify({
-message:"update",
-content:btoa(unescape(encodeURIComponent(JSON.stringify(data,null,2)))),
-sha:sha
-})
-})
-
-}
-
 async function save(){
 
 if(siteName.value.trim()=="" || siteUrl.value.trim()==""){
@@ -250,7 +214,7 @@ data[editIndex]=site
 
 localStorage.setItem("sites",JSON.stringify(data))
 
-await saveJSON("sites.json",data)
+await uploadToGitHub("sites.json",data)
 
 clearForm()
 loadSites()
@@ -327,7 +291,7 @@ data.splice(i,1)
 
 localStorage.setItem("sites",JSON.stringify(data))
 
-await saveJSON("sites.json",data)
+await uploadToGitHub("sites.json",data)
 
 loadSites()
 
@@ -348,7 +312,7 @@ cats.push(name)
 
 localStorage.setItem("cats",JSON.stringify(cats))
 
-await saveJSON("cats.json",cats)
+await uploadToGitHub("cats.json",cats)
 
 newCat.value=""
 
@@ -386,7 +350,7 @@ cats.splice(i,1)
 
 localStorage.setItem("cats",JSON.stringify(cats))
 
-await saveJSON("cats.json",cats)
+await uploadToGitHub("cats.json",cats)
 
 init()
 
@@ -403,6 +367,49 @@ o.text=c
 category.add(o)
 
 })
+
+}
+
+/* GitHub 업로드 */
+
+async function uploadToGitHub(filename,data){
+
+const url=`https://api.github.com/repos/${repo}/contents/${filename}`
+
+let sha=null
+
+const res=await fetch(url)
+
+if(res.ok){
+const file=await res.json()
+sha=file.sha
+}
+
+await fetch(url,{
+method:"PUT",
+headers:{
+Authorization:"Bearer "+token,
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+message:"update "+filename,
+content:btoa(unescape(encodeURIComponent(JSON.stringify(data,null,2)))),
+sha:sha
+})
+})
+
+}
+
+async function loadCats(){
+
+try{
+let res=await fetch("cats.json")
+let data=await res.json()
+localStorage.setItem("cats",JSON.stringify(data))
+return data
+}catch{
+return JSON.parse(localStorage.getItem("cats")||'["전체"]')
+}
 
 }
 
