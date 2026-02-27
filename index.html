@@ -21,22 +21,162 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+window.db=db
+window.fb={collection,getDocs}
+
+</script>
+
+<style>
+
+body{
+font-family:Arial;
+background:#f5f6fa;
+margin:0;
+padding:40px;
+}
+
+.header{
+text-align:center;
+margin-bottom:35px;
+}
+
+.logo{
+width:300px;
+margin-bottom:50px;
+}
+
+.title{
+font-size:42px;
+font-weight:800;
+margin-top:6px;
+letter-spacing:1px;
+}
+
+.top{
+display:flex;
+gap:10px;
+margin-bottom:20px;
+}
+
+#search{
+flex:1;
+padding:14px;
+font-size:16px;
+border-radius:8px;
+border:1px solid #ccc;
+}
+
+#searchBtn{
+padding:14px 26px;
+font-size:16px;
+border:none;
+background:#2f80ed;
+color:white;
+border-radius:8px;
+cursor:pointer;
+}
+
+.tabs{
+margin-bottom:25px;
+}
+
+.tab{
+display:inline-block;
+background:#e4e6eb;
+padding:8px 14px;
+border-radius:8px;
+margin-right:8px;
+cursor:pointer;
+}
+
+.tab.active{
+background:#2f80ed;
+color:white;
+}
+
+.grid{
+display:grid;
+grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+gap:20px;
+}
+
+.card{
+background:white;
+border-radius:14px;
+padding:22px;
+box-shadow:0 3px 10px rgba(0,0,0,0.08);
+cursor:pointer;
+position:relative;
+transition:0.15s;
+}
+
+.card:hover{
+transform:translateY(-4px);
+box-shadow:0 6px 18px rgba(0,0,0,0.1);
+}
+
+.icon{
+font-size:32px;
+margin-bottom:10px;
+}
+
+.name{
+font-size:18px;
+font-weight:bold;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="header">
+
+<img src="logo.png" class="logo">
+
+<div class="title">WORK STATION</div>
+
+</div>
+
+<div class="top">
+<input id="search" placeholder="사이트 검색">
+<button id="searchBtn">검색</button>
+</div>
+
+<div class="tabs" id="tabs"></div>
+
+<div class="grid" id="grid"></div>
+
+<script type="module">
+
+let currentCategory="전체"
+
 async function load(){
 
-let snap=await getDocs(collection(db,"sites"))
+let snap=await fb.getDocs(fb.collection(db,"sites"))
+let sites=[]
+snap.forEach(d=>sites.push(d.data()))
+
+let cats=["전체"]
+
+let snap2=await fb.getDocs(fb.collection(db,"cats"))
+snap2.forEach(d=>cats.push(d.data().name))
+
+renderTabs(cats)
 
 let grid=document.getElementById("grid")
+grid.innerHTML=""
 
-snap.forEach(d=>{
+sites.forEach(s=>{
 
-let s=d.data()
+if(currentCategory!="전체" && s.category!=currentCategory) return
 
 let card=document.createElement("div")
 card.className="card"
 
 card.onclick=()=>window.open(s.url)
 
-card.innerHTML=`
+card.innerHTML = `
 <div class="icon">${s.icon||"🌐"}</div>
 <div class="name">${s.name}</div>
 `
@@ -47,48 +187,47 @@ grid.appendChild(card)
 
 }
 
-window.onload=load
+function renderTabs(cats){
+
+let tabs=document.getElementById("tabs")
+tabs.innerHTML=""
+
+cats.forEach(c=>{
+
+let t=document.createElement("div")
+t.className="tab"+(c==currentCategory?" active":"")
+
+t.innerText=c
+
+t.onclick=()=>{
+currentCategory=c
+load()
+}
+
+tabs.appendChild(t)
+
+})
+
+}
+
+document.getElementById("searchBtn").onclick=search
+document.getElementById("search").onkeyup=e=>{
+if(e.key==="Enter")search()
+}
+
+function search(){
+
+let q=search.value.toLowerCase()
+
+document.querySelectorAll(".card").forEach(c=>{
+c.style.display=c.innerText.toLowerCase().includes(q)?"block":"none"
+})
+
+}
+
+load()
 
 </script>
-
-<style>
-
-body{
-font-family:Arial;
-background:#f5f6fa;
-padding:40px;
-}
-
-.grid{
-display:grid;
-grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
-gap:20px;
-}
-
-.card{
-background:white;
-padding:20px;
-border-radius:10px;
-cursor:pointer;
-}
-
-.icon{
-font-size:30px;
-}
-
-.name{
-font-weight:bold;
-margin-top:5px;
-}
-
-</style>
-</head>
-
-<body>
-
-<h1>WORK STATION</h1>
-
-<div class="grid" id="grid"></div>
 
 </body>
 </html>
