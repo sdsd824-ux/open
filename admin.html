@@ -54,6 +54,8 @@ font-weight:bold;
 margin-left:10px;
 }
 
+/* 모바일 */
+
 @media (max-width:700px){
 
 body{
@@ -139,6 +141,8 @@ let editIndex=null
 
 const iconList=["🌐","📊","🏥","📁","⭐","💬","📅","🧾"]
 
+let DATA
+
 function login(){
 
 if(pw.value===PASSWORD){
@@ -159,10 +163,10 @@ async function init(){
 renderIcons()
 
 let res=await fetch("data.json")
-let json=await res.json()
+DATA=await res.json()
 
-updateCatSelect(json.categories)
-renderCatList(json.categories)
+updateCatSelect(DATA.categories)
+renderCatList(DATA.categories)
 loadSites()
 
 }
@@ -196,9 +200,6 @@ alert("이름 / URL 입력")
 return
 }
 
-let res=await fetch("data.json")
-let json=await res.json()
-
 let site={
 name:siteName.value,
 url:siteUrl.value,
@@ -207,12 +208,12 @@ category:category.value
 }
 
 if(editIndex===null){
-json.sites.push(site)
+DATA.sites.push(site)
 }else{
-json.sites[editIndex]=site
+DATA.sites[editIndex]=site
 }
 
-await uploadToGitHub("data.json",json)
+await upload()
 
 clearForm()
 loadSites()
@@ -235,14 +236,11 @@ function cancelEdit(){
 clearForm()
 }
 
-async function loadSites(){
-
-let res=await fetch("data.json")
-let json=await res.json()
+function loadSites(){
 
 list.innerHTML=""
 
-json.sites.forEach((s,i)=>{
+DATA.sites.forEach((s,i)=>{
 
 let d=document.createElement("div")
 d.className="row"
@@ -263,17 +261,14 @@ list.appendChild(d)
 
 function edit(i){
 
-fetch("data.json")
-.then(r=>r.json())
-.then(json=>{
-
-let s=json.sites[i]
+let s=DATA.sites[i]
 
 siteName.value=s.name
 siteUrl.value=s.url
 category.value=s.category
 
 picked=s.icon
+
 editIndex=i
 
 editingText.innerHTML='<span class="editing">(수정 중)</span>'
@@ -282,18 +277,13 @@ renderIcons()
 
 window.scrollTo({top:0,behavior:"smooth"})
 
-})
-
 }
 
 async function del(i){
 
-let res=await fetch("data.json")
-let json=await res.json()
+DATA.sites.splice(i,1)
 
-json.sites.splice(i,1)
-
-await uploadToGitHub("data.json",json)
+await upload()
 
 loadSites()
 
@@ -301,21 +291,19 @@ loadSites()
 
 async function addCat(){
 
-let res=await fetch("data.json")
-let json=await res.json()
-
 let name=newCat.value.trim()
 
-if(name=="" || json.categories.includes(name)){
+if(name=="" || DATA.categories.includes(name)){
 alert("이미 존재하거나 빈 이름")
 return
 }
 
-json.categories.push(name)
-
-await uploadToGitHub("data.json",json)
+DATA.categories.push(name)
 
 newCat.value=""
+
+await upload()
+
 init()
 
 }
@@ -344,12 +332,9 @@ catList.appendChild(d)
 
 async function delCat(i){
 
-let res=await fetch("data.json")
-let json=await res.json()
+DATA.categories.splice(i,1)
 
-json.categories.splice(i,1)
-
-await uploadToGitHub("data.json",json)
+await upload()
 
 init()
 
@@ -369,9 +354,11 @@ category.add(o)
 
 }
 
-async function uploadToGitHub(filename,data){
+/* GitHub 업로드 */
 
-const url=`https://api.github.com/repos/${repo}/contents/${filename}`
+async function upload(){
+
+const url=`https://api.github.com/repos/${repo}/contents/data.json`
 
 let sha=null
 
@@ -389,8 +376,8 @@ Authorization:"Bearer "+token,
 "Content-Type":"application/json"
 },
 body:JSON.stringify({
-message:"update "+filename,
-content:btoa(unescape(encodeURIComponent(JSON.stringify(data,null,2)))),
+message:"update data",
+content:btoa(unescape(encodeURIComponent(JSON.stringify(DATA,null,2)))),
 sha:sha
 })
 })
