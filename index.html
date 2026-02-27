@@ -139,14 +139,13 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/fireba
 import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyBzUQt0DydA7W3s7qzYjis6UUFA1b4RjqA",
-  authDomain: "open-7d88e.firebaseapp.com",
-  projectId: "open-7d88e",
-  storageBucket: "open-7d88e.firebasestorage.app",
-  messagingSenderId: "359782434518",
-  appId: "1:359782434518:web:22ba4a6bfcb5b21a446b77"
+apiKey: "AIzaSyBzlQtODydA7W3s7qzYjis6UUFA1b4RjqA",
+authDomain: "open-7d88e.firebaseapp.com",
+projectId: "open-7d88e",
+storageBucket: "open-7d88e.firebasestorage.app",
+messagingSenderId: "359782434518",
+appId: "1:359782434518:web:22ba4a6bfc5b21a446b77"
 };
-
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -156,15 +155,13 @@ let currentCategory="전체"
 async function load(){
 
 let sites=[]
-let cats=[]
+let cats=["전체"]
 
-let s=await getDocs(collection(db,"sites"))
+const s=await getDocs(collection(db,"sites"))
 s.forEach(d=>sites.push(d.data()))
 
-let c=await getDocs(collection(db,"cats"))
+const c=await getDocs(collection(db,"cats"))
 c.forEach(d=>cats.push(d.data().name))
-
-if(!cats.includes("전체")) cats.unshift("전체")
 
 renderTabs(cats)
 
